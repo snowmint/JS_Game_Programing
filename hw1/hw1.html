@@ -1,0 +1,521 @@
+<!DOCTYPE html>
+
+<html>
+    <head>
+        <style>
+            body {
+                font-family: Monospace;
+                background-image: linear-gradient(to top, #09203f 0%, #537895 100%);
+                margin: 0px;
+                overflow: hidden;
+            }
+            #info {
+                position: absolute;
+                top: 10px; width: 100%;
+                padding: 5px;
+                text-align: center;
+                font-size: 20px;
+                color: #ffffff
+            }
+            #info a{
+                color: #f00;
+                font-weight: bold;
+                text-decoration: underline;
+                cursor: pointer
+            }
+            button {
+                border: none;
+                color: white;
+                background-color: Transparent;
+                border-radius: 8px;
+                transition-duration: 0.4s;
+                /* Safari */
+                transition-duration: 0.4s;
+                border: 1px solid #ffffff;
+            }
+            button:hover {
+                border: 1px solid #96B9F2;
+                background-color: Transparent;
+                color: white;
+                box-shadow: 0 5px 20px 0 rgba( 0, 0, 0, 0.54), 0 17px 50px 0 rgba(0, 0, 0, 0.19);
+            }
+        </style>
+    </head>
+<body>
+	<div id="info">
+	    OBJLoader + MTLLoader<br>obj/mtl made by Attila Dobàk<br>
+            Press W/S/A/D to move the car
+	</div>
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/108/three.min.js"></script>
+	<script src="https://threejs.org/build/three.min.js"></script>
+    <script src="https://threejs.org/examples/js/loaders/MTLLoader.js"></script>
+    <script src="https://threejs.org/examples/js/loaders/OBJLoader.js"></script>
+    <script src="https://threejs.org/examples/js/controls/OrbitControls.js"></script>
+    <script src="https://jyunming-chen.github.io/tutsplus/js/KeyboardState.js"></script>
+
+<script>
+function getDistance( fromX, fromY, toX, toY ) {
+    var dX = Math.abs( fromX - toX );
+    var dY = Math.abs( fromY - toY );
+    return Math.sqrt( ( dX * dX ) + ( dY * dY ) );
+}
+class Tree {
+    constructor (name, x, y, z){
+        this.x = x;
+        this.y = y;
+        this.z = z;
+        this.r = 4;
+        let loader = new THREE.TextureLoader();
+        loader.crossOrigin = '';
+        let texture = loader.load("./Tree_Texture.png");
+        var geometry = new THREE.PlaneGeometry(50,50);
+        var material = new THREE.MeshBasicMaterial({
+            map:texture,
+            alphaTest:0.5
+        });
+        this.mesh = new THREE.Mesh(geometry, material);
+        this.pos = new THREE.Vector3(x,y,z);
+        this.mesh.name = name;
+        this.mesh.position.copy(this.pos);
+        scene.add(this.mesh);
+    }
+    RectCircleColliding(rect) {
+        var rectCenterX = rect.position.x;
+        var rectCenterY = rect.position.z;
+        //console.log("rectCenter(x, y) (" + rectCenterX + ", " + rectCenterY + ")");
+        var rectX = rectCenterX - rect.w / 2;
+        var rectY = rectCenterY - rect.h / 2;
+        //console.log("rect(x, y) (" + rectX + ", " + rectY + ")");
+        var rectReferenceX = rectX;
+        var rectReferenceY = rectY;
+        //console.log("rectReference(x, y) (" + rectReferenceX + ", " + rectReferenceY + ")");
+        // Rotate circle's center point back
+        var unrotatedCircleX = Math.cos( rect.rotation.y ) * ( this.x - rectCenterX ) - Math.sin( rect.rotation.y ) * ( this.z - rectCenterY ) + rectCenterX;
+        var unrotatedCircleY = Math.sin( rect.rotation.y ) * ( this.x - rectCenterX ) + Math.cos( rect.rotation.y ) * ( this.z - rectCenterY ) + rectCenterY;
+        // Closest point in the rectangle to the center of circle rotated backwards(unrotated)
+        var closestX, closestY;
+        //console.log("unrotatedCircle : (" + unrotatedCircleX + ", " + unrotatedCircleY + ")");
+        // Find the unrotated closest x point from center of unrotated circle
+        if ( unrotatedCircleX < rectReferenceX ) {
+            closestX = rectReferenceX;
+        } else if ( unrotatedCircleX > rectReferenceX + rect.w ) {
+            closestX = rectReferenceX + rect.w;
+        } else {
+            closestX = unrotatedCircleX;
+        }
+        // Find the unrotated closest y point from center of unrotated circle
+        if ( unrotatedCircleY < rectReferenceY ) {
+            closestY = rectReferenceY;
+        } else if ( unrotatedCircleY > rectReferenceY + rect.h ) {
+            closestY = rectReferenceY + rect.h;
+        } else {
+            closestY = unrotatedCircleY;
+        }
+        // Determine collision
+        var collision = false;
+        var distance = getDistance( unrotatedCircleX, unrotatedCircleY, closestX, closestY );
+        if ( distance < this.r ) {
+            collision = true;
+        }
+        else {
+            collision = false;
+        }
+        //console.log("distance : " + distance);
+        return collision;
+    }
+}
+class Obstacal {
+    constructor (name, x, y, z, r) {
+//        let maptexture = new THREE.TextureLoader().load( "./circle-icon.png");
+//        maptexture.repeat.set(1, 1);
+//        maptexture.wrapS = THREE.RepeatWrapping;
+//        maptexture.wrapT = THREE.RepeatWrapping;
+        this.x = x;
+        this.y = y;
+        this.z = z;
+        this.r = r;
+
+        this.mesh = new THREE.Mesh (new THREE.CylinderGeometry (this.r,this.r,10,20), 
+            new THREE.MeshPhongMaterial ({color:0xd0d0d0}));//, map:maptexture
+        this.pos = new THREE.Vector3(x,y,z);
+        this.mesh.position.copy (this.pos);
+        this.touch = false;
+        scene.add (this.mesh);
+        this.mesh.name = name;
+        console.log(name + " been create");
+    }
+    
+    RectCircleColliding(rect) {
+        var rectCenterX = rect.position.x;
+        var rectCenterY = rect.position.z;
+        //console.log("rectCenter(x, y) (" + rectCenterX + ", " + rectCenterY + ")");
+        var rectX = rectCenterX - rect.w / 2;
+        var rectY = rectCenterY - rect.h / 2;
+        //console.log("rect(x, y) (" + rectX + ", " + rectY + ")");
+        var rectReferenceX = rectX;
+        var rectReferenceY = rectY;
+        //console.log("rectReference(x, y) (" + rectReferenceX + ", " + rectReferenceY + ")");
+        // Rotate circle's center point back
+        var unrotatedCircleX = Math.cos( rect.rotation.y ) * ( this.x - rectCenterX ) - Math.sin( rect.rotation.y ) * ( this.z - rectCenterY ) + rectCenterX;
+        var unrotatedCircleY = Math.sin( rect.rotation.y ) * ( this.x - rectCenterX ) + Math.cos( rect.rotation.y ) * ( this.z - rectCenterY ) + rectCenterY;
+        // Closest point in the rectangle to the center of circle rotated backwards(unrotated)
+        var closestX, closestY;
+        //console.log("unrotatedCircle : (" + unrotatedCircleX + ", " + unrotatedCircleY + ")");
+        // Find the unrotated closest x point from center of unrotated circle
+        if ( unrotatedCircleX < rectReferenceX ) {
+            closestX = rectReferenceX;
+        } else if ( unrotatedCircleX > rectReferenceX + rect.w ) {
+            closestX = rectReferenceX + rect.w;
+        } else {
+            closestX = unrotatedCircleX;
+        }
+        // Find the unrotated closest y point from center of unrotated circle
+        if ( unrotatedCircleY < rectReferenceY ) {
+            closestY = rectReferenceY;
+        } else if ( unrotatedCircleY > rectReferenceY + rect.h ) {
+            closestY = rectReferenceY + rect.h;
+        } else {
+            closestY = unrotatedCircleY;
+        }
+        // Determine collision
+        var collision = false;
+        var distance = getDistance( unrotatedCircleX, unrotatedCircleY, closestX, closestY );
+        if ( distance < this.r ) {
+            collision = true;
+        }
+        else {
+            collision = false;
+        }
+        //console.log("distance : " + distance);
+        return collision;
+    }
+}
+var camera1, camera2, scene, sceneHUD, renderer;
+var controls, obj_car, rectangle;
+var keyboard = new KeyboardState();
+var clock, useOne = true;
+var pos = new THREE.Vector3();
+var speed, angle = 0.01, vel;
+var theObjectAll, yellow_box, obstacals = [], Trees = [];
+var tree_mesh;
+var orthoCam;
+
+function getRandom(min,max){
+    return Math.floor(Math.random()*(max-min+1))+min;
+};
+(function() {
+    Math.clamp = function(val,min,max){
+        return Math.min(Math.max(val,min),max);
+    }
+})();
+
+init();
+animate();
+
+function loadCubemap() {
+    var path = "./yuhi/";
+    var format = ".bmp";
+    var urls = [
+            path + 'posx' + format, path + 'negx' + format,
+            path + 'posy' + format, path + 'negy' + format,
+            path + 'posz' + format, path + 'negz' + format
+        ];
+    var loadercube = new THREE.CubeTextureLoader();
+    loadercube.setCrossOrigin ('');
+    var cubeMap = loadercube.load(urls);
+    cubeMap.format = THREE.RGBFormat;
+    //console.log(cubeMap.image);
+    return cubeMap;
+}
+function init() {
+    clock = new THREE.Clock();
+
+    // scene
+    scene = new THREE.Scene();
+    var cubeMap = loadCubemap();
+    scene.background = cubeMap;
+    
+    ////////////
+//    let planeGeo = new THREE.PlaneGeometry(10000,10000);
+//    planeGeo.faceVertexUvs[1] = planeGeo.faceVertexUvs[0];
+//    let planeMat = new THREE.MeshBasicMaterial({color:0xffffff, side:THREE.DoubleSide});
+//    let plane = new THREE.Mesh(planeGeo,planeMat);
+//    plane.rotation.x = -Math.PI / 2;
+//    plane.position.y = 0;
+//    scene.add(plane);
+//    var geometry = new THREE.BoxGeometry( 20, 20, 12 );
+//    var material = new THREE.MeshBasicMaterial( {color: 0x00ff00} );
+//    var cube = new THREE.Mesh( geometry, material );
+//    scene.add( cube );
+    ////////////
+    
+    gridxz = new THREE.GridHelper (200, 20,'red','white');
+    scene.add (gridxz);
+    var ambient = new THREE.AmbientLight(0x444444);
+    scene.add(ambient);
+    var directionalLight = new THREE.DirectionalLight(0xffffff);
+    directionalLight.position.set(0, 1, 1).normalize();
+    scene.add(directionalLight);
+    
+    container = document.createElement('div');
+    document.body.appendChild(container);
+
+    camera1 = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 1, 10000);
+    camera1.position.x = 150;
+    camera1.position.z = 80;  // important
+    camera1.position.y = 40;  // important
+    
+    // model
+    var onProgress = function(xhr) {
+        if (xhr.lengthComputable) {
+          var percentComplete = xhr.loaded / xhr.total * 100;
+          console.log(Math.round(percentComplete, 2) + '% downloaded');
+        }
+    };
+    var onError = function(xhr) {};
+    var mtlLoader = new THREE.MTLLoader();
+    mtlLoader.setPath('model_by_Attila_Dobak/');
+    mtlLoader.load('oldcar.mtl', function(materials) {
+        materials.preload();
+        var objLoader = new THREE.OBJLoader();
+        objLoader.setMaterials(materials);
+        objLoader.setPath('model_by_Attila_Dobak/');
+        objLoader.load('oldcar.obj', function(object) {
+            //var theObject =  unitize (object, 20);
+            theObjectAll = unitize (object, 20);
+            //yellow_box = new THREE.BoxHelper (theObjectAll);
+            scene.add (theObjectAll);				
+            //scene.add (yellow_box);
+            //////// MATERIAL ADJUSTMENT for porsche ///////////////
+            // transparent window: double-side fix
+            object.traverse (
+                function(mesh) {
+                    if (mesh instanceof THREE.Mesh) {
+                        mesh.material.side = THREE.DoubleSide;
+                    }
+                }
+            );
+        }, onProgress, onError);
+    });
+
+    //renderer
+    renderer = new THREE.WebGLRenderer({ alpha: true });
+    renderer.setPixelRatio(window.devicePixelRatio);
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    container.appendChild(renderer.domElement);
+    controls = new THREE.OrbitControls(camera1, renderer.domElement);
+    controls = new THREE.OrbitControls(camera1, renderer.domElement);
+    renderer.autoClear = false;
+    
+    orthoCam = new THREE.OrthographicCamera(-50, 50, 50, -50, -10, 100);
+    window.addEventListener('resize', onWindowResize, false);
+    speed = 0.0;
+    angle = 0.0;
+    
+    for(let i = 0; i < 5; i++) {
+        obstacals.push (new Obstacal ("Obstacal"+i, getRandom(-100,100), 5, getRandom(-100,100), getRandom(2,10)));
+    }
+    
+    for(let i = 0; i < 5; i++) {
+        Trees.push (new Tree ("Tree"+i, getRandom(-100,100), 25, getRandom(-100,100)));
+        
+    }
+    scene.add(Trees);
+}
+
+////////////////////////////////////////
+// create an Object3D of the given object
+// so that it is centered at +Y axis
+function unitize (object, targetSize) {  
+	// find bounding box of 'object'
+	var box3 = new THREE.Box3();
+	box3.setFromObject (object);
+	var size = new THREE.Vector3();
+	size.subVectors (box3.max, box3.min);
+	var center = new THREE.Vector3();
+	center.addVectors(box3.max, box3.min).multiplyScalar (0.5);
+	console.log ('center: ' + center.x + ', '+center.y + ', '+center.z );
+	console.log ('size: ' + size.x + ', ' +  size.y + ', '+size.z );
+    
+	// uniform scaling according to objSize
+	var objSize = findMax (size);
+	var scaleSet = targetSize/objSize;
+	var theObject =  new THREE.Object3D();
+    object.maxX = center.x + 6;
+    object.maxY = center.z + 10;
+    object.minX = center.x - 6;
+    object.minY = center.z - 10;
+    object.w = 20;
+    object.h = 12;
+    theObject.add (object);
+	object.scale.set (scaleSet, scaleSet, scaleSet);
+	object.position.set (-center.x*scaleSet, -center.y*scaleSet + size.y/2*scaleSet, -center.z*scaleSet);
+	return theObject;
+	
+	// helper function
+	function findMax(v) {
+		if (v.x > v.y) {
+			return v.x > v.z ? v.x : v.z;
+		} else { // v.y > v.x
+			return v.y > v.z ? v.y : v.z;
+		} 
+	}
+}
+
+function onWindowResize() {
+    camera1.aspect = window.innerWidth / window.innerHeight;
+    camera1.updateProjectionMatrix();
+    orthoCam.aspect = window.innerWidth / window.innerHeight;
+    orthoCam.updateProjectionMatrix();
+    renderer.setSize(window.innerWidth, window.innerHeight);
+}
+
+function update(dt) {
+    keyboard.update();
+    if (keyboard.pressed("A")) {
+        angle += 0.01;
+    }
+    if (keyboard.pressed("D")) {
+        angle -= 0.01;
+    }
+    if (keyboard.pressed("W")) {
+        speed -= 0.15;
+    }
+    if (keyboard.pressed("S")) {
+        speed += 0.15;
+    }
+    if (keyboard.pressed("space")) {
+        speed = 0.01;
+    }
+    speed = Math.clamp (speed, -50, 50.0);
+    vel = new THREE.Vector3(speed,0,0);
+    vel.applyAxisAngle (new THREE.Vector3(0,1,0), angle);
+    pos.add (vel.clone().multiplyScalar(dt));
+    //console.log(pos);
+}
+
+function animate() {
+    var dt = clock.getDelta();
+    update(dt);
+    
+    controls.update();
+    requestAnimationFrame(animate);
+    if(theObjectAll) {
+        theObjectAll.children[0].position.copy(pos);
+        theObjectAll.children[0].position.y = 4.4;
+        theObjectAll.children[0].rotation.y = angle;
+        //yellow_box.update();
+    }
+    render();
+    var coli = false;
+    if(theObjectAll) {
+        for(let i = 0; i < 5; i++) {
+            coli = obstacals[i].RectCircleColliding(theObjectAll.children[0]);
+            if(coli == true) {
+                console.log("colision cylinder" + i);
+                speed = 0.1;
+            }
+        }
+        for(let i = 0; i < 5; i++) {
+            coli = Trees[i].RectCircleColliding(theObjectAll.children[0]);
+            if(coli == true) {
+                console.log("colision tree" + i);
+                speed = 0.1;
+            }
+        }
+    }
+    
+}
+function render() {
+    renderer.clear();
+    for(let i = 0; i < 5; i++) {
+        Trees[i].mesh.lookAt(new THREE.Vector3(camera1.position.x, 50, camera1.position.z));
+    }
+    let WW = window.innerWidth;
+    let HH = window.innerHeight;
+    renderer.setViewport(0, 0, WW/2, HH);
+    camera1.aspect = WW / 2 / HH;
+    camera1.updateProjectionMatrix();
+    
+    //3rd person view camera
+    if(theObjectAll) {
+        let cameraPos = theObjectAll.children[0].localToWorld(new THREE.Vector3(50, 30, 0));
+        //camera1.position.copy(cameraPos);
+        //camera1.lookAt(theObjectAll.children[0].position);
+        renderer.render(scene, camera1);
+        //console.log(theObjectAll.children[0].w);
+        //console.log(theObjectAll.children[0].h);
+    }
+    
+    ///////////////////////////////////////////////////////
+    //god's eye view camera
+    renderer.setViewport(WW/2, 0, WW/2, HH);
+    if(theObjectAll) {
+        orthoCam.position.set(theObjectAll.children[0].position.x, 80, theObjectAll.position.z);
+        orthoCam.up.set(-1, 0, 0);
+        orthoCam.lookAt(theObjectAll.children[0].position);
+        renderer.render(scene, orthoCam);
+    }
+    controls.update();
+}
+</script>
+</body>
+
+</html>
+
+
+<!--
+    
+//    RectCircleColliding(rect) {
+//        let Rad2 = this.r * this.r;
+//        /* Translate coordinates, placing C at the origin. */
+//        R->max.x -= C->x;  R->max.y -= C->y;
+//        R->min.x -= C->x;  R->min.y -= C->y;
+//        
+//
+//        if (R->max.x < 0) 			/* R to left of circle center */
+//            if (R->max.y < 0) 		/* R in lower left corner */
+//                    return ((R->max.x * R->max.x + R->max.y * R->max.y) < Rad2);
+//            else if (R->min.y > 0) 	/* R in upper left corner */
+//                    return ((R->max.x * R->max.x + R->min.y * R->min.y) < Rad2);
+//            else 					/* R due West of circle */
+//                    return(ABS(R->max.x) < Rad);
+//            else if (R->min.x > 0)  	/* R to right of circle center */
+//                if (R->max.y < 0) 	/* R in lower right corner */
+//                        return ((R->min.x * R->min.x + R->max.y * R->max.y) < Rad2);
+//            else if (R->min.y > 0)  	/* R in upper right corner */
+//                    return ((R->min.x * R->min.x + R->min.y * R->min.y) < Rad2);
+//            else 				/* R due East of circle */
+//                    return (R->min.x < Rad);
+//            else				/* R on circle vertical centerline */
+//                if (R->max.y < 0) 	/* R due South of circle */
+//                    return (ABS(R->max.y) < Rad);
+//            else if (R->min.y > 0)  	/* R due North of circle */
+//                    return (R->min.y < Rad);
+//            else 				/* R contains circle centerpoint */
+//                    return(TRUE);
+//    }
+//    
+//function RectCircleColliding(circle, rect) {
+//    var distX = Math.abs(circle.x - rect.x - rect.w / 2);
+//    var distY = Math.abs(circle.y - rect.y - rect.h / 2);
+//
+//    if (distX > (rect.w / 2 + circle.r)) {
+//        return false;
+//    }
+//    if (distY > (rect.h / 2 + circle.r)) {
+//        return false;
+//    }
+//
+//    if (distX <= (rect.w / 2)) {
+//        return true;
+//    }
+//    if (distY <= (rect.h / 2)) {
+//        return true;
+//    }
+//
+//    var dx = distX - rect.w / 2;
+//    var dy = distY - rect.h / 2;
+//    return (dx * dx + dy * dy <= (circle.r * circle.r));
+//}
+-->
