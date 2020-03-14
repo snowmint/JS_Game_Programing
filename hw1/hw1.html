@@ -250,7 +250,7 @@ function init() {
     ////////////
     
     gridxz = new THREE.GridHelper (200, 20,'red','white');
-    scene.add (gridxz);
+    //scene.add (gridxz);
     var ambient = new THREE.AmbientLight(0x444444);
     scene.add(ambient);
     var directionalLight = new THREE.DirectionalLight(0xffffff);
@@ -297,14 +297,34 @@ function init() {
             );
         }, onProgress, onError);
     });
+    let map =  new THREE.TextureLoader().load("./GrassHD.jpg");
+    map.repeat.set(100, 100);
+    map.wrapS = THREE.RepeatWrapping;
+    map.wrapT = THREE.RepeatWrapping;
+    let planeGeo = new THREE.PlaneGeometry(10000,10000);
+    planeGeo.faceVertexUvs[1] = planeGeo.faceVertexUvs[0];
+    let planeMat = new THREE.MeshBasicMaterial({color:0xffffff, side:THREE.DoubleSide, map:map});
+    let plane = new THREE.Mesh(planeGeo,planeMat);
+    plane.rotation.x = -Math.PI / 2;
+    plane.position.y = 0;
+    scene.add(plane);
 
     //renderer
     renderer = new THREE.WebGLRenderer({ alpha: true });
     renderer.setPixelRatio(window.devicePixelRatio);
     renderer.setSize(window.innerWidth, window.innerHeight);
     container.appendChild(renderer.domElement);
+    
+    //controls
     controls = new THREE.OrbitControls(camera1, renderer.domElement);
-    controls = new THREE.OrbitControls(camera1, renderer.domElement);
+    controls.enableDamping = true; // an animation loop is required when either damping or auto-rotation are enabled
+    controls.dampingFactor = 0.05;
+    controls.screenSpacePanning = false;
+    controls.minDistance = 100;
+    controls.maxDistance = 500;
+    controls.maxPolarAngle = (Math.PI-0.1) / 2;
+    //end controls
+    
     renderer.autoClear = false;
     
     orthoCam = new THREE.OrthographicCamera(-50, 50, 50, -50, -10, 100);
@@ -312,12 +332,12 @@ function init() {
     speed = 0.0;
     angle = 0.0;
     
-    for(let i = 0; i < 5; i++) {
-        obstacals.push (new Obstacal ("Obstacal"+i, getRandom(-100,100), 5, getRandom(-100,100), getRandom(2,10)));
+    for(let i = 0; i < 20; i++) {
+        obstacals.push (new Obstacal ("Obstacal"+i, getRandom(-300,300), 5, getRandom(-300,300), getRandom(2,10)));
     }
     
-    for(let i = 0; i < 5; i++) {
-        Trees.push (new Tree ("Tree"+i, getRandom(-100,100), 25, getRandom(-100,100)));
+    for(let i = 0; i < 20; i++) {
+        Trees.push (new Tree ("Tree"+i, getRandom(-300,300), 25, getRandom(-300,300)));
         
     }
     scene.add(Trees);
@@ -409,14 +429,14 @@ function animate() {
     render();
     var coli = false;
     if(theObjectAll) {
-        for(let i = 0; i < 5; i++) {
+        for(let i = 0; i < 20; i++) {
             coli = obstacals[i].RectCircleColliding(theObjectAll.children[0]);
             if(coli == true) {
                 console.log("colision cylinder" + i);
                 speed = 0.1;
             }
         }
-        for(let i = 0; i < 5; i++) {
+        for(let i = 0; i < 20; i++) {
             coli = Trees[i].RectCircleColliding(theObjectAll.children[0]);
             if(coli == true) {
                 console.log("colision tree" + i);
@@ -428,7 +448,7 @@ function animate() {
 }
 function render() {
     renderer.clear();
-    for(let i = 0; i < 5; i++) {
+    for(let i = 0; i < 20; i++) {
         Trees[i].mesh.lookAt(new THREE.Vector3(camera1.position.x, 50, camera1.position.z));
     }
     let WW = window.innerWidth;
