@@ -64,7 +64,7 @@ class Tree {
         this.x = x;
         this.y = y;
         this.z = z;
-        this.r = 4;
+        this.r = 2.3;
         let loader = new THREE.TextureLoader();
         loader.crossOrigin = '';
         let texture = loader.load("./Tree_Texture.png");
@@ -124,6 +124,73 @@ class Tree {
         return collision;
     }
 }
+
+class Tree_ano {
+    constructor (name, x, y, z){
+        this.x = x;
+        this.y = y;
+        this.z = z;
+        this.r = 1.5;
+        let loader = new THREE.TextureLoader();
+        loader.crossOrigin = '';
+        let texture = loader.load("./high_tree.png");
+        var geometry = new THREE.PlaneGeometry(50,90);
+        var material = new THREE.MeshBasicMaterial({
+            map:texture,
+            alphaTest:0.5
+        });
+        this.mesh = new THREE.Mesh(geometry, material);
+        this.pos = new THREE.Vector3(x,y,z);
+        this.mesh.name = name;
+        this.mesh.position.copy(this.pos);
+        scene.add(this.mesh);
+    }
+    RectCircleColliding(rect) {
+        var rectCenterX = rect.position.x;
+        var rectCenterY = rect.position.z;
+        //console.log("rectCenter(x, y) (" + rectCenterX + ", " + rectCenterY + ")");
+        var rectX = rectCenterX - rect.w / 2;
+        var rectY = rectCenterY - rect.h / 2;
+        //console.log("rect(x, y) (" + rectX + ", " + rectY + ")");
+        var rectReferenceX = rectX;
+        var rectReferenceY = rectY;
+        //console.log("rectReference(x, y) (" + rectReferenceX + ", " + rectReferenceY + ")");
+        // Rotate circle's center point back
+        var unrotatedCircleX = Math.cos( rect.rotation.y ) * ( this.x - rectCenterX ) - Math.sin( rect.rotation.y ) * ( this.z - rectCenterY ) + rectCenterX;
+        var unrotatedCircleY = Math.sin( rect.rotation.y ) * ( this.x - rectCenterX ) + Math.cos( rect.rotation.y ) * ( this.z - rectCenterY ) + rectCenterY;
+        // Closest point in the rectangle to the center of circle rotated backwards(unrotated)
+        var closestX, closestY;
+        //console.log("unrotatedCircle : (" + unrotatedCircleX + ", " + unrotatedCircleY + ")");
+        // Find the unrotated closest x point from center of unrotated circle
+        if ( unrotatedCircleX < rectReferenceX ) {
+            closestX = rectReferenceX;
+        } else if ( unrotatedCircleX > rectReferenceX + rect.w ) {
+            closestX = rectReferenceX + rect.w;
+        } else {
+            closestX = unrotatedCircleX;
+        }
+        // Find the unrotated closest y point from center of unrotated circle
+        if ( unrotatedCircleY < rectReferenceY ) {
+            closestY = rectReferenceY;
+        } else if ( unrotatedCircleY > rectReferenceY + rect.h ) {
+            closestY = rectReferenceY + rect.h;
+        } else {
+            closestY = unrotatedCircleY;
+        }
+        // Determine collision
+        var collision = false;
+        var distance = getDistance( unrotatedCircleX, unrotatedCircleY, closestX, closestY );
+        if ( distance < this.r ) {
+            collision = true;
+        }
+        else {
+            collision = false;
+        }
+        //console.log("distance : " + distance);
+        return collision;
+    }
+}
+
 class Obstacal {
     constructor (name, x, y, z, r) {
 //        let maptexture = new THREE.TextureLoader().load( "./circle-icon.png");
@@ -213,8 +280,8 @@ init();
 animate();
 
 function loadCubemap() {
-    var path = "./yuhi/";
-    var format = ".bmp";
+    var path = "./skyHD/";
+    var format = ".png";
     var urls = [
             path + 'posx' + format, path + 'negx' + format,
             path + 'posy' + format, path + 'negy' + format,
@@ -249,13 +316,17 @@ function init() {
 //    scene.add( cube );
     ////////////
     
-    gridxz = new THREE.GridHelper (200, 20,'red','white');
+    //gridxz = new THREE.GridHelper (200, 20,'red','white');
     //scene.add (gridxz);
-    var ambient = new THREE.AmbientLight(0x444444);
+    var ambient = new THREE.AmbientLight(0xf0f0f0);
     scene.add(ambient);
     var directionalLight = new THREE.DirectionalLight(0xffffff);
     directionalLight.position.set(0, 1, 1).normalize();
     scene.add(directionalLight);
+    
+    var light = new THREE.PointLight( 0xff0000, 20, 600 );
+    light.position.set( 50, 600, 50 );
+    scene.add( light );
     
     container = document.createElement('div');
     document.body.appendChild(container);
@@ -320,8 +391,8 @@ function init() {
     controls.enableDamping = true; // an animation loop is required when either damping or auto-rotation are enabled
     controls.dampingFactor = 0.05;
     controls.screenSpacePanning = false;
-    controls.minDistance = 100;
-    controls.maxDistance = 500;
+    controls.minDistance = 10;
+    controls.maxDistance = 400;
     controls.maxPolarAngle = (Math.PI-0.1) / 2;
     //end controls
     
@@ -332,13 +403,17 @@ function init() {
     speed = 0.0;
     angle = 0.0;
     
+    /*
     for(let i = 0; i < 20; i++) {
         obstacals.push (new Obstacal ("Obstacal"+i, getRandom(-300,300), 5, getRandom(-300,300), getRandom(2,10)));
     }
+    */
     
-    for(let i = 0; i < 20; i++) {
-        Trees.push (new Tree ("Tree"+i, getRandom(-300,300), 25, getRandom(-300,300)));
-        
+    for(let i = 0; i < 50; i++) {
+        Trees.push (new Tree ("Tree"+i, getRandom(-300,300), 25, getRandom(-500,500)));
+    }
+    for(let i = 0; i < 50; i++) {
+        Trees.push (new Tree_ano ("Tree"+i, getRandom(-300,300), 40, getRandom(-500,500)));
     }
     scene.add(Trees);
 }
@@ -429,14 +504,14 @@ function animate() {
     render();
     var coli = false;
     if(theObjectAll) {
-        for(let i = 0; i < 20; i++) {
+        /*for(let i = 0; i < 20; i++) {
             coli = obstacals[i].RectCircleColliding(theObjectAll.children[0]);
             if(coli == true) {
                 console.log("colision cylinder" + i);
                 speed = 0.1;
             }
-        }
-        for(let i = 0; i < 20; i++) {
+        }*/
+        for(let i = 0; i < 100; i++) {
             coli = Trees[i].RectCircleColliding(theObjectAll.children[0]);
             if(coli == true) {
                 console.log("colision tree" + i);
@@ -448,7 +523,7 @@ function animate() {
 }
 function render() {
     renderer.clear();
-    for(let i = 0; i < 20; i++) {
+    for(let i = 0; i < 100; i++) {
         Trees[i].mesh.lookAt(new THREE.Vector3(camera1.position.x, 50, camera1.position.z));
     }
     let WW = window.innerWidth;
@@ -462,6 +537,7 @@ function render() {
         let cameraPos = theObjectAll.children[0].localToWorld(new THREE.Vector3(50, 30, 0));
         //camera1.position.copy(cameraPos);
         //camera1.lookAt(theObjectAll.children[0].position);
+        camera1.lookAt(theObjectAll.children[0].position);
         renderer.render(scene, camera1);
         //console.log(theObjectAll.children[0].w);
         //console.log(theObjectAll.children[0].h);
@@ -471,7 +547,7 @@ function render() {
     //god's eye view camera
     renderer.setViewport(WW/2, 0, WW/2, HH);
     if(theObjectAll) {
-        orthoCam.position.set(theObjectAll.children[0].position.x, 80, theObjectAll.position.z);
+        orthoCam.position.set(theObjectAll.children[0].position.x, 80, theObjectAll.children[0].position.z);
         orthoCam.up.set(-1, 0, 0);
         orthoCam.lookAt(theObjectAll.children[0].position);
         renderer.render(scene, orthoCam);
