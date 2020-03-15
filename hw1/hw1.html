@@ -190,7 +190,50 @@ class Tree_ano {
         return collision;
     }
 }
-
+class Grass {
+    constructor (name, x, y, z){
+        this.x = x;
+        this.y = y;
+        this.z = z;
+        this.r = 1.5;
+        let loader = new THREE.TextureLoader();
+        loader.crossOrigin = '';
+        let texture = loader.load("./wheatgrass_dark.png");
+        var geometry = new THREE.PlaneGeometry(30,20);
+        var material = new THREE.MeshBasicMaterial({
+            map:texture,
+            alphaTest:0.5
+        });
+        this.mesh = new THREE.Mesh(geometry, material);
+        this.pos = new THREE.Vector3(x,y,z);
+        this.mesh.name = name;
+        this.mesh.position.copy(this.pos);
+        scene.add(this.mesh);
+    }
+}
+    
+class Grass_ano {
+    constructor (name, x, y, z){
+        this.x = x;
+        this.y = y;
+        this.z = z;
+        this.r = 1.5;
+        let loader = new THREE.TextureLoader();
+        loader.crossOrigin = '';
+        let texture = loader.load("./family-grass2.png");
+        var geometry = new THREE.PlaneGeometry(30,20);
+        var material = new THREE.MeshBasicMaterial({
+            map:texture,
+            alphaTest:0.5
+        });
+        this.mesh = new THREE.Mesh(geometry, material);
+        this.pos = new THREE.Vector3(x,y,z);
+        this.mesh.name = name;
+        this.mesh.position.copy(this.pos);
+        scene.add(this.mesh);
+    }
+}
+    
 class Obstacal {
     constructor (name, x, y, z, r) {
 //        let maptexture = new THREE.TextureLoader().load( "./circle-icon.png");
@@ -263,7 +306,7 @@ var keyboard = new KeyboardState();
 var clock, useOne = true;
 var pos = new THREE.Vector3();
 var speed, angle = 0.01, vel;
-var theObjectAll, yellow_box, obstacals = [], Trees = [];
+var theObjectAll, yellow_box, obstacals = [], Trees = [], Grasses=[];
 var tree_mesh;
 var orthoCam;
 
@@ -413,9 +456,16 @@ function init() {
         Trees.push (new Tree ("Tree"+i, getRandom(-300,300), 25, getRandom(-500,500)));
     }
     for(let i = 0; i < 50; i++) {
-        Trees.push (new Tree_ano ("Tree"+i, getRandom(-300,300), 40, getRandom(-500,500)));
+        Trees.push (new Tree_ano ("Tree_ano"+i, getRandom(-300,300), 40, getRandom(-500,500)));
     }
     scene.add(Trees);
+    for(let i = 0; i < 100; i++) {
+        Grasses.push (new Grass ("Grass"+i, getRandom(-300,300), 5, getRandom(-500,500)));
+    }
+    for(let i = 0; i < 300; i++) {
+        Grasses.push (new Grass_ano ("Grass_ano"+i, getRandom(-300,300), 2, getRandom(-500,500)));
+    }
+    scene.add(Grasses);
 }
 
 ////////////////////////////////////////
@@ -525,6 +575,9 @@ function render() {
     renderer.clear();
     for(let i = 0; i < 100; i++) {
         Trees[i].mesh.lookAt(new THREE.Vector3(camera1.position.x, 50, camera1.position.z));
+    }
+    for(let i = 0; i < 400; i++) {
+        Grasses[i].mesh.lookAt(new THREE.Vector3(camera1.position.x, 50, camera1.position.z));
     }
     let WW = window.innerWidth;
     let HH = window.innerHeight;
