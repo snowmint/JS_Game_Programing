@@ -333,6 +333,7 @@ function loadCubemap() {
     var loadercube = new THREE.CubeTextureLoader();
     loadercube.setCrossOrigin ('');
     var cubeMap = loadercube.load(urls);
+    var cubeMap = loadercube.load(urls);
     cubeMap.format = THREE.RGBFormat;
     //console.log(cubeMap.image);
     return cubeMap;
@@ -367,7 +368,7 @@ function init() {
     directionalLight.position.set(0, 1, 1).normalize();
     scene.add(directionalLight);
     
-    var light = new THREE.PointLight( 0xff0000, 20, 600 );
+    var light = new THREE.PointLight( 0xffff00, 20, 600 );
     light.position.set( 50, 600, 50 );
     scene.add( light );
     
@@ -435,7 +436,7 @@ function init() {
     controls.dampingFactor = 0.05;
     controls.screenSpacePanning = false;
     controls.minDistance = 10;
-    controls.maxDistance = 400;
+    controls.maxDistance = 600;
     controls.maxPolarAngle = (Math.PI-0.1) / 2;
     //end controls
     
@@ -458,16 +459,21 @@ function init() {
     for(let i = 0; i < 50; i++) {
         Trees.push (new Tree_ano ("Tree_ano"+i, getRandom(-300,300), 40, getRandom(-500,500)));
     }
-    scene.add(Trees);
+    //scene.add(Trees);
     for(let i = 0; i < 100; i++) {
         Grasses.push (new Grass ("Grass"+i, getRandom(-300,300), 5, getRandom(-500,500)));
     }
     for(let i = 0; i < 300; i++) {
         Grasses.push (new Grass_ano ("Grass_ano"+i, getRandom(-300,300), 2, getRandom(-500,500)));
     }
-    scene.add(Grasses);
+    //scene.add(Grasses);
+    
 }
 
+function addObjects(){
+    scene.add(Trees);
+    scene.add(Grasses);
+};
 ////////////////////////////////////////
 // create an Object3D of the given object
 // so that it is centered at +Y axis
@@ -540,6 +546,7 @@ function update(dt) {
 }
 
 function animate() {
+    
     var dt = clock.getDelta();
     update(dt);
     
@@ -573,11 +580,15 @@ function animate() {
 }
 function render() {
     renderer.clear();
-    for(let i = 0; i < 100; i++) {
-        Trees[i].mesh.lookAt(new THREE.Vector3(camera1.position.x, 50, camera1.position.z));
+    if(Trees.length>1){
+        for(let i = 0; i < 100; i++) {
+            Trees[i].mesh.lookAt(new THREE.Vector3(camera1.position.x, 50, camera1.position.z));
+        }
     }
-    for(let i = 0; i < 400; i++) {
-        Grasses[i].mesh.lookAt(new THREE.Vector3(camera1.position.x, 50, camera1.position.z));
+    if(Grasses.length>1){
+        for(let i = 0; i < 400; i++) {
+            Grasses[i].mesh.lookAt(new THREE.Vector3(camera1.position.x, 50, camera1.position.z));
+        }
     }
     let WW = window.innerWidth;
     let HH = window.innerHeight;
@@ -594,6 +605,9 @@ function render() {
         renderer.render(scene, camera1);
         //console.log(theObjectAll.children[0].w);
         //console.log(theObjectAll.children[0].h);
+        //console.log(controls.position)
+        controls.target.x = theObjectAll.children[0].position.x;
+        controls.target.z = theObjectAll.children[0].position.z;
     }
     
     ///////////////////////////////////////////////////////
@@ -605,6 +619,7 @@ function render() {
         orthoCam.lookAt(theObjectAll.children[0].position);
         renderer.render(scene, orthoCam);
     }
+    
     controls.update();
 }
 </script>
