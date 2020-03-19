@@ -40,12 +40,13 @@
     </style>
 </head>
 <body>
+  
   <div id="info">
+   <br><br>
     with BGM (compose by Snowmint)<br><br>
     <button id="dim" style="width:20%">Dimmer</button>
     <button id="play" style="width:20%">Click twice first</button>
   </div>
-  <br>
 
     <audio controls volume="0.1" id="collisionsound" style="display:none">
         <source src="./sound/collisionSound_short3.wav" type='audio/wav'>
@@ -79,11 +80,11 @@ class Circle {
   intersectMW(otherMotionWall, num) {
     //using multiplications because it's faster than Math.pow
     if(num == 4){
-        if (this.pos.x >= otherMotionWall.position.x-53 && this.pos.x <= otherMotionWall.position.x+53 && this.pos.z >= otherMotionWall.position.z-8 && this.pos.z <= otherMotionWall.position.z+8) return true;
+        if (this.pos.x >= (otherMotionWall.position.x)-53 && this.pos.x <= (otherMotionWall.position.x)+53 && this.pos.z >= (otherMotionWall.position.z)-8 && this.pos.z <= (otherMotionWall.position.z)+8 && this.pos.y <= (otherMotionWall.position.y)+25 && this.pos.y >= (otherMotionWall.position.y)-25) return true;
         else return false;
     }
     if(num == 5){
-        if (this.pos.x >= otherMotionWall.position.x-8 && this.pos.x <= otherMotionWall.position.x+8 && this.pos.z >= otherMotionWall.position.z-53 && this.pos.z <= otherMotionWall.position.z+53) return true;
+        if (this.pos.x >= otherMotionWall.position.x-8 && this.pos.x <= otherMotionWall.position.x+8 && this.pos.z >= otherMotionWall.position.z-53 && this.pos.z <= otherMotionWall.position.z+53 && this.pos.y <= (otherMotionWall.position.y)+25 && this.pos.y >= (otherMotionWall.position.y)-25) return true;
         else return false;
     }
   }
@@ -269,7 +270,7 @@ var clock = new THREE.Clock();
 var lightSpots;
 var numOfPucks = 21;
 var click_twice_first = 0;
-var offset = 0.05;
+var offset = 0.05, offsetY = 0.05, offsetC = 0.05;
 init();
 animate();
 
@@ -426,7 +427,7 @@ function animate() {
   var dt = clock.getDelta();
   
   wall_entrys[4].position.z+=offset;
-    
+  wall_entrys[4].position.y+=offsetY;
   if(wall_entrys[4].position.z >= 80){
       offset = (-1)*offset;
       wall_entrys[4].position.z = 79;
@@ -435,9 +436,17 @@ function animate() {
       offset = (-1)*offset;
       wall_entrys[4].position.z = -79;
   }
+  if(wall_entrys[4].position.y >= 40){
+      offsetY = (-1)*offsetY;
+      wall_entrys[4].position.y = 39;
+  }
+  if(wall_entrys[4].position.y <= -40){
+      offsetY = (-1)*offsetY;
+      wall_entrys[4].position.y = -39;
+  }
     
   wall_entrys[5].position.x+=offset;
-    
+  wall_entrys[5].position.y += offsetC;
   if(wall_entrys[5].position.x >= 80){
       offset = (-1)*offset;
       wall_entrys[5].position.x = 79;
@@ -446,7 +455,14 @@ function animate() {
       offset = (-1)*offset;
       wall_entrys[5].position.x = -79;
   }
-
+  if(wall_entrys[5].position.y >= 40){
+      offsetC = (-1)*offsetC;
+      wall_entrys[5].position.y = 39;
+  }
+  if(wall_entrys[5].position.y <= -40){
+      offsetC = (-1)*offsetC;
+      wall_entrys[5].position.y = -39;
+  }
     
   for (let i = 0; i < numOfPucks; i++) {
     pucks[i].pos.add(pucks[i].vel.clone().multiplyScalar(dt));
