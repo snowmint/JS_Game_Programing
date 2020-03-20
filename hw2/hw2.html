@@ -356,25 +356,30 @@ function init() {
   //pucks & lights
   var CylinGeom = new THREE.CylinderGeometry(5, 5, 2, 32);
   pucks = [];
-  //****To avoid color become too weird, I'll use color set to let color of each puck is limited random, the random color function also work normally below, but I choose my random method to keep the color more pleasing to the eye****//
+  //****keep the color more pleasing to the eye****//
   var randColor = [];
   let colorSet = [0xB52F3C, 0xe29d26, 0xe2dd26, 0x57e530, 0x30dbe5, 0x2a79f9, 0xBC86E8, 0xB52F3C, 0xe29d26, 0xe2dd26, 0x57e530, 0x30dbe5, 0x2a79f9, 0xBC86E8, 0xB52F3C, 0xe29d26, 0xe2dd26, 0x57e530, 0x30dbe5, 0x2a79f9, 0xBC86E8];
   let emissiSet = [0x915F5F, 0x705528, 0x6d6b24, 0x568255, 0x24696d, 0x23447a, 0x54376B, 0x915F5F, 0x705528, 0x6d6b24, 0x568255, 0x24696d, 0x23447a, 0x54376B, 0x915F5F, 0x705528, 0x6d6b24, 0x568255, 0x24696d, 0x23447a, 0x54376B];
-  
+  var color_rand = new THREE.Color();
+  var rand_record;
+    //color_rand.setHSL( Math.random(), 1.0, 0.5 );
   for (let i = 0; i < numOfPucks; i++) {
+    rand_record = Math.random();
+    color_rand.setHSL( rand_record, 1.0, 0.5 );
     let puck = new Circle();
-    var color_pick = getRandom(0,20);
     puck.mesh = new THREE.Mesh(CylinGeom, new THREE.MeshLambertMaterial({
-      color: colorSet[color_pick],//colorSet[i],
-      emissive: emissiSet[color_pick],//emissiSet[i],
+      color: color_rand,//colorSet[color_pick],//colorSet[i],
+      emissive: color_rand,//emissiSet[color_pick],//emissiSet[i],
     }));
-    randColor.push(color_pick);
+    randColor.push(rand_record);
     pucks.push(puck);
     scene.add(puck.mesh);
   }
+  console.log("randcolor");
+  console.log(randColor);
   //lightSpots = [];
   for (let i = 0; i < numOfPucks; i++) {
-    pucks[i].light = new THREE.PointLight(colorSet[randColor[i]], 15, 30);
+    pucks[i].light = new THREE.PointLight(color_rand.setHSL( randColor[i], 1.0, 0.5 ), 15, 30);//colorSet[randColor[i]]
     pucks[i].light.position.set(pucks[i].pos.x, pucks[i].pos.y, pucks[i].pos.z);
     scene.add(pucks[i].light);
   }
@@ -401,7 +406,7 @@ function init() {
 function getRandom(min,max){
     return Math.floor(Math.random()*(max-min+1))+min;
 };
-//****To avoid color become too weird, I'll use color set to let color of each puck is limited random, the random color function also work normally below, but I choose my random method to keep the color more pleasing to the eye****//
+
 function randomColor(){
     var r = Math.floor(Math.random()*256);
     var g = Math.floor(Math.random()*256);
