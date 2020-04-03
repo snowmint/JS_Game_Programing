@@ -5,6 +5,7 @@
     <script src="https://code.jquery.com/jquery-2.1.4.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/dat-gui/0.5/dat.gui.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bubbly-bg@1.0.0/dist/bubbly-bg.js"></script>
+    <script src="https://raw.githack.com/mrdoob/three.js/dev/examples/js/misc/Gyroscope.js"></script>
     <script>
     bubbly({
       blur:15,
@@ -72,13 +73,15 @@
     </style>
 </head>
 <body>
-  <div id="ti">HS dance</div>
-  <div id="info">2015-1018-00 composed by Snowmint<br>
+  
+  <div id="ti" style="top:30px">GControl walking with Hopping step and footprint</div>
+  <div id="info">Pink Panther Theme Song by Henry Mancini<br>
     <button id="play" style="width:20%">Pause</button>
+    <button id="switch" style="width:20%">using Gyro</button>
     <br><br>
   </div><br>
   <audio id="soundtrack" autoplay loop style="display:none">
-  <source src="https://raw.githubusercontent.com/snowmint/gameProgram/master/bgm/1018-00.mp3" type='audio/mp3'>
+  <source src="Pink Panther Walk Cycle 2.mp3" type='audio/mp3'>
   </audio>
 </body>
 <script>
@@ -106,21 +109,72 @@ var isDimming = false,
   sign = 1.0;
 var isPaused = false;
 //about sound end
-var camera, scene, renderer, controls;
+var camera, scene, renderer, controls, controls1,camera1;
 var keyboard = new KeyboardState();
-var theta = 0
+var theta = 0;
 var parts;
-var high = 17
+var high = 17;
 var gcontrols; // for dat-gui
-var speed = 10
+var speed = 7;
 var intI = speed;
+var angle = 0;
+var gyro;
+var useGyro = true;
+var print, opacity = 1.0;
+var footprints = [], footprintmeshs = [];
+var clock_footprint;
+var footprint_num = 0;
 
-
+$('#switch').click ( function () {
+	useGyro = !useGyro;
+  if (useGyro) $('#switch').text ('using Gyro')
+  else $('#switch').text ('using normal')
+})
+  
+function remove(name) {
+    var o = scene.getObjectByName(name);
+    scene.remove(o);
+    console.log("delete" + name);
+}
+  
+class CFootprint {
+    constructor(mesh) {//, pos, name
+        this.alive = 1;
+        this.angle = 1;
+        this.toggle = 1;
+        this.mesh = mesh;
+        footprintmeshs.push(this.mesh);
+        console.log(this.mesh.name + " been create");
+        scene.add (this.mesh);
+        //console.log(this.mesh.position);
+    }
+    update() {
+        if(this.toggle == 1) this.angle += 0.01;
+        this.mesh.opacity -= 0.01;
+        //this.mesh.opacity = Math.abs(Math.sin(3*this.angle));
+        if(this.angle >= 2.1 && this.alive == 1) {
+            for( var i = 0; i < footprints.length; i++){ 
+               if ( footprints[i].mesh.name === this.mesh.name) {
+                 footprints.splice(i, 1); 
+               }
+            }
+            for( var j = 0; j < footprintmeshs.length; j++){ 
+               if ( footprintmeshs[j].name === this.mesh.name) {
+                 footprintmeshs.splice(j, 1); 
+               }
+            }
+            this.alive = 0;
+            remove(this.mesh.name);
+        }
+    }
+}
 init();
 animate();
 
+  
+  
 function init() {
-
+  clock_footprint = new THREE.Clock();
   soundTrack = document.getElementById('soundtrack');
   soundTrack.volume = 0.7;
 
@@ -131,6 +185,10 @@ function init() {
   camera.position.z = 120;
   scene.add(camera);
 
+  camera1 = new THREE.PerspectiveCamera(80, window.innerWidth / window.innerHeight, 1, 1000);
+  camera1.position.z = 120;
+  scene.add(camera1);
+    
   light = new THREE.PointLight(0x474747);
   light.position.set(0, 50, 0);
   scene.add(light);
@@ -149,11 +207,17 @@ function init() {
 
 
   controls = new THREE.OrbitControls(camera, renderer.domElement);
+  let controls1 = new THREE.OrbitControls(camera1, renderer.domElement);
 
   document.body.appendChild(renderer.domElement);
   window.addEventListener('resize', onWindowResize, true);
+    
   ////////////////////////////////////////////////////////////////////////
   parts = buildPart()
+  gyro = new THREE.Gyroscope();
+  scene.add (gyro)
+  gyro.add (camera1)
+  parts[0].add (gyro)
 
   scene.add(parts[0])
   parts[0].add(parts[1])
@@ -202,6 +266,7 @@ function init() {
   gcontrol = { //new function()
     P_high: 0.01,
     P_X: 0.01,
+    P_Z: 0.01,
     body_x: 0.01,
     body_y: 0.01,
     body_z: 0.01,
@@ -299,6 +364,7 @@ function init() {
   var people_pos = gui.addFolder('people');
   people_pos.add(gcontrol, 'P_high', 0.01, 30);
   people_pos.add(gcontrol, 'P_X', -60.0, 60.0);
+  people_pos.add(gcontrol, 'P_Z', -60.0, 60.0);
   var body_pos = gui.addFolder('body');
   body_pos.add(gcontrol, 'body_x', 0.01, 6.25);
   body_pos.add(gcontrol, 'body_y', 0.01, 6.25);
@@ -342,7 +408,8 @@ function loadJSON() {
         "key1": {
         "0": {
           "P_high": 17,
-          "P_X": 0.0,
+          "P_X": 0.0,//0
+          "P_Z": 0.0,
           "body_x": 0.01,
           "body_y": 4.8,
           "body_z": 0.01,
@@ -373,42 +440,44 @@ function loadJSON() {
         }
       },
       "key2": {
-        "0": {
-          "P_high": 17,
-          "P_X": 0.0,
-          "body_x": 0.01,
-          "body_y": 4.8,
-          "body_z": 0.01,
-          "leftUpArm_x": 3.4,
-          "leftUpArm_y": 0.6,
-          "leftUpArm_z": 5.1,
-          "leftArm_x": 0.01,
-          "leftArm_y": 0.43,
-          "leftArm_z": 0.01,
-          "rightUpArm_x": 3.3,
-          "rightUpArm_y": 6.25,
-          "rightUpArm_z": 4.3,
-          "rightArm_x": 0.01,
-          "rightArm_y": 0.77,
-          "rightArm_z": 6.1,
-          "leftUpLeg_x": 0.01,
-          "leftUpLeg_y": 5.928,
-          "leftUpLeg_z": 4.8,
-          "leftLeg_x": 0.01,
-          "leftLeg_y": 0.561,
-          "leftLeg_z": 6.3,
-          "rightUpLeg_x": 0.1,
-          "rightUpLeg_y": 0.01,
-          "rightUpLeg_z": 4.8,
-          "rightLeg_x": 0.04,
-          "rightLeg_y": 0.04,
-          "rightLeg_z": 6.3
-        }
-      },
+          "0": {
+            "P_high": 17,
+            "P_X": 0,//0
+            "P_Z": 0.0,
+            "body_x": 0.01,
+            "body_y": 4.8,
+            "body_z": 0.01,
+            "leftUpArm_x": 3.4,
+            "leftUpArm_y": 0.22087017741481282,
+            "leftUpArm_z": 5.141174317093778,
+            "leftArm_x": 0.01,
+            "leftArm_y": 0.43,
+            "leftArm_z": 0.01,
+            "rightUpArm_x": 3.3,
+            "rightUpArm_y": 6.25,
+            "rightUpArm_z": 4.3,
+            "rightArm_x": 0.01,
+            "rightArm_y": 0.77,
+            "rightArm_z": 6.1,
+            "leftUpLeg_x": 0.01,
+            "leftUpLeg_y": 5.928,
+            "leftUpLeg_z": 4.8,
+            "leftLeg_x": 0.01,
+            "leftLeg_y": 0.561,
+            "leftLeg_z": 6.25,
+            "rightUpLeg_x": 0.1,
+            "rightUpLeg_y": 0.01,
+            "rightUpLeg_z": 4.8,
+            "rightLeg_x": 0.04,
+            "rightLeg_y": 0.04,
+            "rightLeg_z": 6.25
+          }
+        },
       "key3": {
         "0": {
           "P_high": 17,
-          "P_X": -2.0,
+          "P_X": -2.0,//-2.0
+          "P_Z": 0.0,
           "body_x": 0.01,
           "body_y": 4.8,
           "body_z": 0.01,
@@ -441,7 +510,8 @@ function loadJSON() {
       "key4": {
         "0": {
           "P_high": 17,
-          "P_X": -4.0,
+          "P_X": -4.0,//-4
+          "P_Z": 0.0,
           "body_x": 0.01,
           "body_y": 4.8,
           "body_z": 0.01,
@@ -474,7 +544,8 @@ function loadJSON() {
       "key5": {
         "0": {
           "P_high": 15,
-          "P_X": -6.0,
+          "P_X": -6.0,//-6
+          "P_Z": 0.0,
           "body_x": 0.01,
           "body_y": 4.8,
           "body_z": 0.01,
@@ -507,7 +578,8 @@ function loadJSON() {
       "key6": {
         "0": {
           "P_high": 16,
-          "P_X": -8.0,
+          "P_X": -8,//-8
+          "P_Z": 0.0,
           "body_x": 0.01,
           "body_y": 4.8,
           "body_z": 0.01,
@@ -540,7 +612,8 @@ function loadJSON() {
       "key7": {
         "0": {
           "P_high": 17,
-          "P_X": -10.0,
+          "P_X": -10.0,//-10.0
+          "P_Z": 0.0,
           "body_x": 0.01,
           "body_y": 4.8,
           "body_z": 0.01,
@@ -573,7 +646,8 @@ function loadJSON() {
       "key8": {
         "0": {
           "P_high": 17,
-          "P_X": -13.0,
+          "P_X": -13,//-13
+          "P_Z": 0.0,
           "body_x": 0.01,
           "body_y": 4.8,
           "body_z": 0.01,
@@ -606,7 +680,8 @@ function loadJSON() {
       "key9": {
         "0": {
           "P_high": 17,
-          "P_X": -15.0,
+          "P_X": -15.0,//-15
+          "P_Z": 0.0,
           "body_x": 0.01,
           "body_y": 4.8,
           "body_z": 0.01,
@@ -639,7 +714,8 @@ function loadJSON() {
       "key10": {
         "0": {
           "P_high": 20,
-          "P_X": -15.0,
+          "P_X": -15,//-15
+          "P_Z": 0.0,
           "body_x": 0.01,
           "body_y": 4.8,
           "body_z": 0.01,
@@ -672,7 +748,8 @@ function loadJSON() {
        "key11": {
           "0": {
             "P_high": 17,
-            "P_X": -16,
+            "P_X": -16.0,//-16
+            "P_Z": 0.0,
             "body_x": 0.01,
             "body_y": 4.8,
             "body_z": 0.01,
@@ -705,7 +782,8 @@ function loadJSON() {
       "key12": {
           "0": {
             "P_high": 17,
-            "P_X": -18,
+            "P_X": -18.0,//-18
+            "P_Z": 0.0,
             "body_x": 0.01,
             "body_y": 4.8,
             "body_z": 0.01,
@@ -738,7 +816,8 @@ function loadJSON() {
       "key13": {
           "0": {
             "P_high": 17,
-            "P_X": -19.862010701210924,
+            "P_X": -19.0,//-19
+            "P_Z": 0.0,
             "body_x": 0.01,
             "body_y": 4.8,
             "body_z": 0.01,
@@ -771,7 +850,8 @@ function loadJSON() {
       "key14": {
           "0": {
             "P_high": 17,
-            "P_X": -23,
+            "P_X": -23,//-23
+            "P_Z": 0.0,
             "body_x": 0.01,
             "body_y": 4.8,
             "body_z": 0.01,
@@ -804,7 +884,8 @@ function loadJSON() {
       "key15": {
           "0": {
             "P_high": 17,
-            "P_X": -24.593072373979165,
+            "P_X": -24.0,//-24
+            "P_Z": 0.0,
             "body_x": 0.01,
             "body_y": 4.8,
             "body_z": 0.01,
@@ -837,7 +918,8 @@ function loadJSON() {
       "key16": {
           "0": {
             "P_high": 16.225375950436504,
-            "P_X": -26.620670233736973,
+            "P_X": -26.620670233736973,//-26.620670233736973
+            "P_Z": 0.0,
             "body_x": 0.01,
             "body_y": 4.8,
             "body_z": 0.01,
@@ -870,7 +952,8 @@ function loadJSON() {
         "key17": {
           "0": {
             "P_high": 16.225375950436504,
-            "P_X": -27.972402140242185,
+            "P_X": -27.97240214024218,//-27.97240214024218
+            "P_Z": 0.0,
             "body_x": 0.01,
             "body_y": 4.8,
             "body_z": 0.01,
@@ -903,7 +986,8 @@ function loadJSON() {
         "key18": {
           "0": {
             "P_high": 16.563196282737263,
-            "P_X": -29.324134046747396,
+            "P_X": -29.324134046747396,//-29.324134046747396
+            "P_Z": 0.0,
             "body_x": 0.01,
             "body_y": 4.8,
             "body_z": 0.01,
@@ -936,7 +1020,8 @@ function loadJSON() {
         "key19": {
           "0": {
             "P_high": 16.563196282737263,
-            "P_X": -30,
+            "P_X": -30,//-30
+            "P_Z": 0.0,
             "body_x": 0.01,
             "body_y": 4.8,
             "body_z": 0.01,
@@ -970,6 +1055,7 @@ function loadJSON() {
           "0": {
             "P_high": 17.914477611940303,
             "P_X": -30.13629963390586,
+            "P_Z": 0.0,
             "body_x": 0.01,
             "body_y": 4.8,
             "body_z": 0.01,
@@ -1003,6 +1089,7 @@ function loadJSON() {
           "0": {
             "P_high": 20.603579273444105,
             "P_X": -30.13629963390586,
+            "P_Z": 0.0,
             "body_x": 0.01,
             "body_y": 4.8,
             "body_z": 0.01,
@@ -1036,6 +1123,7 @@ function loadJSON() {
           "0": {
             "P_high": 18.590118276541823,
             "P_X": -30.13629963390586,
+            "P_Z": 0.0,
             "body_x": 0.01,
             "body_y": 4.8,
             "body_z": 0.01,
@@ -1069,6 +1157,7 @@ function loadJSON() {
           "0": {
             "P_high": 16.563196282737263,
             "P_X": -31.613629963390586,
+            "P_Z": 0.0,
             "body_x": 0.01,
             "body_y": 4.8,
             "body_z": 0.01,
@@ -1102,6 +1191,7 @@ function loadJSON() {
           "0": {
             "P_high": 16.563196282737263,
             "P_X": -31.613629963390586,
+            "P_Z": 0.0,
             "body_x": 0.01,
             "body_y": 4.8,
             "body_z": 0.01,
@@ -1135,6 +1225,7 @@ function loadJSON() {
           "0": {
             "P_high": 16.563196282737263,
             "P_X": -34.31709377640101,
+            "P_Z": 0.0,
             "body_x": 0.01,
             "body_y": 4.8,
             "body_z": 0.01,
@@ -1168,6 +1259,7 @@ function loadJSON() {
         "0": {
           "P_high": 17,
           "P_X": -35.0,
+          "P_Z": 0.0,
           "body_x": 0.01,
           "body_y": 4.8,
           "body_z": 0.01,
@@ -1201,6 +1293,7 @@ function loadJSON() {
         "0": {
           "P_high": 17,
           "P_X": -35.0,
+          "P_Z": 0.0,
           "body_x": 0.01,
           "body_y": 4.8,
           "body_z": 0.01,
@@ -1234,6 +1327,7 @@ function loadJSON() {
         "0": {
           "P_high": 17,
           "P_X": -37.0,
+          "P_Z": 0.0,
           "body_x": 0.01,
           "body_y": 4.8,
           "body_z": 0.01,
@@ -1267,6 +1361,7 @@ function loadJSON() {
         "0": {
           "P_high": 17,
           "P_X": -39.0,
+          "P_Z": 0.0,
           "body_x": 0.01,
           "body_y": 4.8,
           "body_z": 0.01,
@@ -1300,6 +1395,7 @@ function loadJSON() {
         "0": {
           "P_high": 15,
           "P_X": -41.0,
+          "P_Z": 0.0,
           "body_x": 0.01,
           "body_y": 4.8,
           "body_z": 0.01,
@@ -1333,6 +1429,7 @@ function loadJSON() {
         "0": {
           "P_high": 16,
           "P_X": -43.0,
+          "P_Z": 0.0,
           "body_x": 0.01,
           "body_y": 4.8,
           "body_z": 0.01,
@@ -1366,6 +1463,7 @@ function loadJSON() {
         "0": {
           "P_high": 17,
           "P_X": -45.0,
+          "P_Z": 0.0,
           "body_x": 0.01,
           "body_y": 4.8,
           "body_z": 0.01,
@@ -1399,6 +1497,7 @@ function loadJSON() {
         "0": {
           "P_high": 17,
           "P_X": -48.0,
+          "P_Z": 0.0,
           "body_x": 0.01,
           "body_y": 4.8,
           "body_z": 0.01,
@@ -1432,6 +1531,7 @@ function loadJSON() {
         "0": {
           "P_high": 17,
           "P_X": -50.0,
+          "P_Z": 0.0,
           "body_x": 0.01,
           "body_y": 4.8,
           "body_z": 0.01,
@@ -1465,6 +1565,7 @@ function loadJSON() {
         "0": {
           "P_high": 20,
           "P_X": -50.0,
+          "P_Z": 0.0,
           "body_x": 0.01,
           "body_y": 4.8,
           "body_z": 0.01,
@@ -1498,6 +1599,7 @@ function loadJSON() {
           "0": {
             "P_high": 17,
             "P_X": -51,
+            "P_Z": 0.0,
             "body_x": 0.01,
             "body_y": 4.8,
             "body_z": 0.01,
@@ -1531,6 +1633,7 @@ function loadJSON() {
           "0": {
             "P_high": 17,
             "P_X": -53,
+            "P_Z": 0.0,
             "body_x": 0.01,
             "body_y": 4.8,
             "body_z": 0.01,
@@ -1564,6 +1667,7 @@ function loadJSON() {
           "0": {
             "P_high": 17,
             "P_X": -54.862010701210924,
+            "P_Z": 0.0,
             "body_x": 0.01,
             "body_y": 4.8,
             "body_z": 0.01,
@@ -1597,6 +1701,7 @@ function loadJSON() {
           "0": {
             "P_high": 17,
             "P_X": -58,
+            "P_Z": 0.0,
             "body_x": 0.01,
             "body_y": 4.8,
             "body_z": 0.01,
@@ -1630,6 +1735,7 @@ function loadJSON() {
           "0": {
             "P_high": 17,
             "P_X": -59.593072373979165,
+            "P_Z": 0.0,
             "body_x": 0.01,
             "body_y": 4.8,
             "body_z": 0.01,
@@ -1663,6 +1769,7 @@ function loadJSON() {
           "0": {
             "P_high": 16.225375950436504,
             "P_X": -61.620670233736973,
+            "P_Z": 0.0,
             "body_x": 0.01,
             "body_y": 4.8,
             "body_z": 0.01,
@@ -1696,6 +1803,7 @@ function loadJSON() {
           "0": {
             "P_high": 16.225375950436504,
             "P_X": -62.972402140242185,
+            "P_Z": 0.0,
             "body_x": 0.01,
             "body_y": 4.8,
             "body_z": 0.01,
@@ -1729,6 +1837,7 @@ function loadJSON() {
           "0": {
             "P_high": 16.563196282737263,
             "P_X": -64.324134046747396,
+            "P_Z": 0.0,
             "body_x": 0.01,
             "body_y": 4.8,
             "body_z": 0.01,
@@ -1762,6 +1871,7 @@ function loadJSON() {
           "0": {
             "P_high": 16.563196282737263,
             "P_X": -65,
+            "P_Z": 0.0,
             "body_x": 0.01,
             "body_y": 4.8,
             "body_z": 0.01,
@@ -1795,6 +1905,7 @@ function loadJSON() {
           "0": {
             "P_high": 17.914477611940303,
             "P_X": -65.13629963390586,
+            "P_Z": 0.0,
             "body_x": 0.01,
             "body_y": 4.8,
             "body_z": 0.01,
@@ -1828,6 +1939,7 @@ function loadJSON() {
           "0": {
             "P_high": 20.603579273444105,
             "P_X": -65.13629963390586,
+            "P_Z": 0.0,
             "body_x": 0.01,
             "body_y": 4.8,
             "body_z": 0.01,
@@ -1861,6 +1973,7 @@ function loadJSON() {
           "0": {
             "P_high": 18.590118276541823,
             "P_X": -65.13629963390586,
+            "P_Z": 0.0,
             "body_x": 0.01,
             "body_y": 4.8,
             "body_z": 0.01,
@@ -1894,6 +2007,7 @@ function loadJSON() {
           "0": {
             "P_high": 16.563196282737263,
             "P_X": -66.613629963390586,
+            "P_Z": 0.0,
             "body_x": 0.01,
             "body_y": 4.8,
             "body_z": 0.01,
@@ -1927,6 +2041,7 @@ function loadJSON() {
           "0": {
             "P_high": 16.563196282737263,
             "P_X": -66.613629963390586,
+            "P_Z": 0.0,
             "body_x": 0.01,
             "body_y": 4.8,
             "body_z": 0.01,
@@ -1960,6 +2075,7 @@ function loadJSON() {
           "0": {
             "P_high": 16.563196282737263,
             "P_X": -69.31709377640101,
+            "P_Z": 0.0,
             "body_x": 0.01,
             "body_y": 4.8,
             "body_z": 0.01,
@@ -2027,8 +2143,13 @@ function loadJSON() {
 }
 
 function onWindowResize() {
-  camera.aspect = window.innerWidth / window.innerHeight;
-  camera.updateProjectionMatrix();
+  if(useGyro){
+    camera1.aspect = window.innerWidth / window.innerHeight;
+    camera1.updateProjectionMatrix();
+  }else {
+    camera.aspect = window.innerWidth / window.innerHeight;
+    camera.updateProjectionMatrix();
+  }
   renderer.setSize(window.innerWidth, window.innerHeight);
 }
 
@@ -2086,8 +2207,8 @@ function buildPart(colorName = 'white') {
   body_shL.position.y = 13.5 //+ high
   body_shR.position.x = -3
   body_shR.position.y = 13.5 //+ high
-  axis = new THREE.AxisHelper(5)
-  body.add(axis)
+  //axis = new THREE.AxisHelper(5)
+  //body.add(axis)
 
 
 
@@ -2098,7 +2219,7 @@ function buildPart(colorName = 'white') {
   leftUpperArm.add(leftUpperArmjointMesh)
   leftUpperArmjointMesh.position.x = 6
   upperArmMesh.position.x = 3
-  leftUpperArm.add(new THREE.AxisHelper(5))
+  //leftUpperArm.add(new THREE.AxisHelper(5))
   body.add(leftUpperArm);
 
   let leftArm = new THREE.Object3D()
@@ -2108,7 +2229,7 @@ function buildPart(colorName = 'white') {
   leftArm.add(leftArmjointMesh)
   leftArmjointMesh.position.x = 8
   ArmMesh.position.x = 4
-  leftArm.add(new THREE.AxisHelper(5))
+  //leftArm.add(new THREE.AxisHelper(5))
 
   let rightUpperArm = new THREE.Object3D()
   rightUpperArmMesh = new THREE.Mesh(new THREE.BoxGeometry(7, 1.5, 1.5), skinMat)
@@ -2117,7 +2238,7 @@ function buildPart(colorName = 'white') {
   rightUpperArm.add(rightUpperArmjointMesh)
   rightUpperArmjointMesh.position.x = 6
   rightUpperArmMesh.position.x = 3
-  rightUpperArm.add(new THREE.AxisHelper(-5))
+  //rightUpperArm.add(new THREE.AxisHelper(-5))
   body.add(rightUpperArm);
 
   let rightArm = new THREE.Object3D()
@@ -2127,7 +2248,7 @@ function buildPart(colorName = 'white') {
   rightArm.add(rightArmjointMesh)
   rightArmjointMesh.position.x = 8
   ArmMesh.position.x = 4
-  rightArm.add(new THREE.AxisHelper(-5))
+  //rightArm.add(new THREE.AxisHelper(-5))
 
   let leftUpperLeg = new THREE.Object3D()
   upperLegMesh = new THREE.Mesh(new THREE.BoxGeometry(10, 2, 2), skinMat)
@@ -2136,7 +2257,7 @@ function buildPart(colorName = 'white') {
   leftUpperLegjointMesh.position.x = 7
   leftUpperLeg.add(upperLegMesh)
   upperLegMesh.position.x = 1.5
-  leftUpperLeg.add(new THREE.AxisHelper(5))
+  //leftUpperLeg.add(new THREE.AxisHelper(5))
 
   let leftLeg = new THREE.Object3D()
   LegMesh = new THREE.Mesh(new THREE.BoxGeometry(10, 1.5, 1.5), skinMat)
@@ -2149,7 +2270,7 @@ function buildPart(colorName = 'white') {
   leftLegJMesh.position.x = 10
   leftLeg.add(LegMesh)
   LegMesh.position.x = 5
-  leftLeg.add(new THREE.AxisHelper(5))
+  //leftLeg.add(new THREE.AxisHelper(5))
 
   let rightUpperLeg = new THREE.Object3D()
   upperLegMesh = new THREE.Mesh(new THREE.BoxGeometry(10, 2, 2), skinMat)
@@ -2158,7 +2279,7 @@ function buildPart(colorName = 'white') {
   rightUpperLegjointMesh.position.x = 7
   rightUpperLeg.add(upperLegMesh)
   upperLegMesh.position.x = 1.5
-  rightUpperLeg.add(new THREE.AxisHelper(-5))
+  //rightUpperLeg.add(new THREE.AxisHelper(-5))
 
   let rightLeg = new THREE.Object3D()
   LegMesh = new THREE.Mesh(new THREE.BoxGeometry(10, 1.5, 1.5), skinMat)
@@ -2171,7 +2292,7 @@ function buildPart(colorName = 'white') {
   rightLegJMesh.position.x = 10
   rightLeg.add(LegMesh)
   LegMesh.position.x = 5
-  rightLeg.add(new THREE.AxisHelper(-5))
+  //rightLeg.add(new THREE.AxisHelper(-5))
 
   return [body, leftUpperArm, rightUpperArm, leftArm, rightArm, leftUpperLeg, rightUpperLeg, leftLeg, rightLeg];
 }
@@ -2181,19 +2302,30 @@ function sleep(milliseconds) {
   while (1)
     if ((new Date().getTime() - start) > milliseconds) break;
 }
+function isNegNum(val){
+  if(val*-1 > 0){
+    return true;
+  }
+  else {
+    return false;
+  }
+}
 
 function animate() {
-
+  
   ///*//for animation
 
   let d = Math.floor(intI / speed);
+  if(d%2 == 0)angle = angle + 0.003;
+  else angle = angle+0.001;
   var move = loadJSON().remembered['key' + d];
-
+  
   parts[0].position.y = move[0].P_high;
-  parts[0].position.x = move[0].P_X;
-
+  parts[0].position.x = 60 * Math.cos(angle);//move[0].P_X;
+  parts[0].position.z = -60 * Math.sin(angle);//move[0].P_Z;
+  //console.log(60 * Math.cos(angle), -60 * Math.sin(angle));
   parts[0].rotation.x = move[0].body_x;
-  parts[0].rotation.y = move[0].body_y;
+  parts[0].rotation.y = angle + Math.PI;//move[0].body_y;
   parts[0].rotation.z = move[0].body_z;
 
   parts[1].rotation.x = move[0].leftUpArm_x;
@@ -2223,11 +2355,79 @@ function animate() {
   parts[7].rotation.x = move[0].leftLeg_x;
   parts[7].rotation.y = move[0].leftLeg_y;
   parts[7].rotation.z = move[0].leftLeg_z;
-
+  
   parts[8].rotation.x = move[0].rightLeg_x;
   parts[8].rotation.y = move[0].rightLeg_y;
   parts[8].rotation.z = move[0].rightLeg_z;
 
+  //footprint
+  let dt_footprint = clock_footprint.getDelta();
+  footprints.forEach (function (b) {b.update (dt_footprint)});
+  if(intI%40==0) {
+    var loader = new THREE.TextureLoader();
+    loader.setCrossOrigin ('');
+    let v_x = 60 * Math.cos(angle);
+    let v_z = -60 * Math.sin(angle);
+    let footprint_mono;
+    
+    if((intI/40)%2 == 0) {
+      let tex = loader.load ('Shoe-footprint.png');
+      tex.wrapS = THREE.RepeatWrapping;
+      tex.repeat.x = - 1;
+      footprint_mono = new THREE.Mesh (new THREE.PlaneGeometry (6,6), new THREE.MeshBasicMaterial({map: tex, alphaTest:0.5, transparent: true, side: THREE.DoubleSide}));
+
+      if(isNegNum(v_x) == true && isNegNum(v_z) == true) {
+        footprint_mono.position.x = v_x-3;
+        footprint_mono.position.z = v_z-3;
+        console.log("***here case1");
+      }
+      else if(isNegNum(v_x) == false && isNegNum(v_z) == false){
+        footprint_mono.position.x = v_x+3;
+        footprint_mono.position.z = v_z+3;
+      }
+      else if(isNegNum(v_x) == true && isNegNum(v_z) == false) {
+        footprint_mono.position.x = v_x-3;
+        footprint_mono.position.z = v_z+3;
+        console.log("***here case2");
+      }
+      else if(isNegNum(v_x) == false && isNegNum(v_z) == true){
+        footprint_mono.position.x = v_x+3;
+        footprint_mono.position.z = v_z-3;
+      }
+    }
+    else if((intI/40)%2 == 1) {
+      let tex = loader.load ('Shoe-footprint.png');
+      footprint_mono = new THREE.Mesh (new THREE.PlaneGeometry (6,6), new THREE.MeshBasicMaterial({map: tex, alphaTest:0.5, transparent: true, side: THREE.DoubleSide}));
+      
+      if(isNegNum(v_x) == true && isNegNum(v_z) == true) {
+        footprint_mono.position.x = v_x+3;
+        footprint_mono.position.z = v_z+3;
+        console.log("***here case1");
+      }
+      else if(isNegNum(v_x) == false && isNegNum(v_z) == false){
+        footprint_mono.position.x = v_x-3;
+        footprint_mono.position.z = v_z-3;
+      }
+      else if(isNegNum(v_x) == true && isNegNum(v_z) == false) {
+        footprint_mono.position.x = v_x+3;
+        footprint_mono.position.z = v_z-3;
+        console.log("***here case2");
+      }
+      else if(isNegNum(v_x) == false && isNegNum(v_z) == true){
+        footprint_mono.position.x = v_x-3;
+        footprint_mono.position.z = v_z+3;
+      }
+    }
+    footprint_mono.rotation.x = -Math.PI/2;
+    footprint_mono.rotation.z = angle - 2*Math.PI;
+    footprint_mono.name = "footprint"+footprint_num;
+    footprint_mono.position.y = 0.01;
+    footprint_mono.opacity = 1.0;
+    footprints.push(new CFootprint(footprint_mono.clone()));
+    footprint_num += 1;
+  }
+  
+    
   if (intI >= 49 * speed + (speed - 1)) intI = speed;
   else intI += 1;
 
@@ -2235,6 +2435,7 @@ function animate() {
   /*//for gui control
   parts[0].position.y = gcontrol.P_high;
   parts[0].position.x = gcontrol.P_X;
+  parts[0].position.z = gcontrol.P_Z;
 
   parts[0].rotation.x = gcontrol.body_x;
   parts[0].rotation.y = gcontrol.body_y;
@@ -2273,7 +2474,10 @@ function animate() {
   parts[8].rotation.z = gcontrol.rightLeg_z;
   //*/
   requestAnimationFrame(animate);
-  renderer.render(scene, camera);
+  if (useGyro)
+  	renderer.render (scene, camera1)
+  else
+  	renderer.render (scene, camera)
   //sleep(3000);
 }
 
