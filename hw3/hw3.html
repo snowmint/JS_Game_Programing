@@ -143,16 +143,22 @@ class CFootprint {
         this.angle = 1;
         this.toggle = 1;
         this.mesh = mesh;
+        //this.mesh.opacity = 1.0;
+        //this.mesh.transparent = true;
+        //this.material.opacity = 1.0;
+        //this.mesh.materials[0].transparent = true;
         footprintmeshs.push(this.mesh);
         //console.log(this.mesh.name + " been create");
         scene.add (this.mesh);
-        //console.log(this.mesh.position);
+        //console.log(this.mesh);
     }
     update() {
         if(this.toggle == 1) this.angle += 0.01;
-        this.mesh.opacity -= 0.01;
+        //this.mesh.opacity -= 0.001;
+        //console.log(this.mesh.opacity);
+        this.mesh.material.opacity -= 0.0002;
         //this.mesh.opacity = Math.abs(Math.sin(3*this.angle));
-        if(this.angle >= 2.1 && this.alive == 1) {
+        if(this.angle >= 35.1 && this.alive == 1) {
             for( var i = 0; i < footprints.length; i++){ 
                if ( footprints[i].mesh.name === this.mesh.name) {
                  footprints.splice(i, 1); 
@@ -2440,7 +2446,7 @@ function animate() {
     }
     else if((intI/40)%2 == 1) {
       let tex = loader.load ('Shoe-footprint.png');
-      footprint_mono = new THREE.Mesh (new THREE.PlaneGeometry (6,6), new THREE.MeshBasicMaterial({map: tex, alphaTest:0.5, transparent: true, side: THREE.DoubleSide}));
+      footprint_mono = new THREE.Mesh (new THREE.PlaneGeometry (6,6), new THREE.MeshLambertMaterial({map: tex, alphaTest:0.5, transparent: true, side: THREE.DoubleSide}));
       
       if(isNegNum(v_x) == true && isNegNum(v_z) == true) {
         footprint_mono.position.x = v_x+3;
@@ -2465,7 +2471,7 @@ function animate() {
     footprint_mono.rotation.z = angle - 2*Math.PI;
     footprint_mono.name = "footprint"+footprint_num;
     footprint_mono.position.y = 0.01;
-    footprint_mono.opacity = 1.0;
+    footprint_mono.material.opacity = 1.0;
     footprints.push(new CFootprint(footprint_mono.clone()));
     footprint_num += 1;
   }
