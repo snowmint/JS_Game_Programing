@@ -62,14 +62,13 @@
   </audio>
   <script>
     class TwoLinkArm {
-      constructor (number) {
+      constructor () {
         this.theta1 = 0;
         this.theta2 = 0;
         this.vel = new THREE.Vector3(10, 0, 10);
         this.pos = new THREE.Vector3(0,0,0);
         this.worldpos = new THREE.Vector3(0,0,0);
         this.paddle = new THREE.Mesh (new THREE.CylinderGeometry (5,5,2, 32), new THREE.MeshNormalMaterial());
-        this.name = "TwoLinkArm"+number;
       }
       init () {
         let twoLink = new THREE.Object3D();
@@ -127,101 +126,56 @@
         //console.log(this.worldpos);
         //console.log(other.pos);
         //console.log("distance : " +distance);
-        return distance <= 6.5;
+        return distance <= 6;
       }
 
       CollisionOfPuck(p2) {
-        
         if (this.intersectPuck(p2)) {
-          //console.log("collision");
-          if(this.name == "TwoLinkArm1"){ //player
-            console.log(this.name);
-            //swap(1,2) swap(3,4) change, swap(2,4) change
-            if(this.worldpos.z <= p2.pos.z) {//1
-              collisionSound.play();
-              console.log("coli in 1");
-              this.worldpos.x += 2;
-              this.worldpos.z += 2;
-              p2.pos.x -= 2;
-              p2.pos.z -= 2;
-            }
-            if (this.worldpos.x <= p2.pos.x && this.worldpos.z > p2.pos.z) {//4
-              collisionSound.play();
-              console.log("coli in 4");
-              this.worldpos.x += 2;
-              this.worldpos.z -= 2;
-              p2.pos.x -= 2;
-              p2.pos.z += 2;
-            }
-            if (this.worldpos.x > p2.pos.x && this.worldpos.z > p2.pos.z) {//3
-              collisionSound.play();
-              console.log("coli in 3");
-              
-              this.worldpos.x -= 2;
-              this.worldpos.z -= 2;
-              p2.pos.x += 2;
-              p2.pos.z += 2;
-            }
-            if (this.worldpos.x > p2.pos.x && this.worldpos.z <= p2.pos.z) {//2
-              collisionSound.play();
-              console.log("coli in 2");
-              
-              
-              this.worldpos.x -= 2;
-              this.worldpos.z += 2;
-              p2.pos.x += 2;
-              p2.pos.z -= 2;
-            }
-            var distance = Math.sqrt((this.worldpos.x - p2.pos.x) * (this.worldpos.x - p2.pos.x) + (this.worldpos.z - p2.pos.z) * (this.worldpos.z - p2.pos.z));
-            var dotRet1, dotRet2;
-            dotRet1 = p2.vel.clone().sub(p2.vel.clone().multiplyScalar(-1)).dot(this.worldpos.clone().sub(p2.pos)) / (distance * distance);
-            dotRet2 = p2.vel.clone().sub(p2.vel.clone().multiplyScalar(-1)).dot(p2.pos.clone().sub(this.worldpos)) / (distance * distance);
-            this.vel = this.vel.clone().sub(this.worldpos.clone().sub(p2.pos).multiplyScalar(dotRet1));
-            p2.vel = p2.vel.clone().sub(p2.pos.clone().sub(this.worldpos).multiplyScalar(dotRet2));
+          console.log("collision");
+          if (this.worldpos.x <= p2.pos.x && this.worldpos.z <= p2.pos.z) {
+            collisionSound.play();
+            //this.theta2 -= 3;
+            //this.theta2 -= 3;
+            p2.pos.x += 2;
+            p2.pos.x += 2;
           }
-          else if(this.name == "TwoLinkArm2"){ //auto
-            console.log(this.name);
-            if (this.worldpos.x <= p2.pos.x && this.worldpos.z <= p2.pos.z) {//1
-              collisionSound.play();
-              this.worldpos.x -= 2;
-              this.worldpos.z -= 2;
-              p2.pos.x += 2;
-              p2.pos.z += 2;
-            }
-            if (this.worldpos.x <= p2.pos.x && this.worldpos.z > p2.pos.z) {//4
-              collisionSound.play();
-              this.worldpos.x -= 2;
-              this.worldpos.z += 2;
-              p2.pos.x += 2;
-              p2.pos.z -= 2;
-            }
-            if (this.worldpos.x > p2.pos.x && this.worldpos.z > p2.pos.z) {//3
-              collisionSound.play();
-              this.worldpos.x += 2;
-              this.worldpos.z += 2;
-              p2.pos.x -= 2;
-              p2.pos.z -= 2;
-            }
-            if (this.worldpos.x > p2.pos.x && this.worldpos.z <= p2.pos.z) {//2
-              collisionSound.play();
-              this.worldpos.x += 2;
-              this.worldpos.z -= 2;
-              p2.pos.x -= 2;
-              p2.pos.z += 2;
-            }
-            var distance = Math.sqrt((this.worldpos.x - p2.pos.x) * (this.worldpos.x - p2.pos.x) + (this.worldpos.z - p2.pos.z) * (this.worldpos.z - p2.pos.z));
-            var dotRet1, dotRet2;
-            dotRet1 = p2.vel.clone().sub(p2.vel.clone().multiplyScalar(-1)).dot(this.worldpos.clone().sub(p2.pos)) / (distance * distance);
-            dotRet2 = p2.vel.clone().sub(p2.vel.clone().multiplyScalar(-1)).dot(p2.pos.clone().sub(this.worldpos)) / (distance * distance);
-            this.vel = this.vel.clone().sub(this.worldpos.clone().sub(p2.pos).multiplyScalar(dotRet1));
-            p2.vel = p2.vel.clone().sub(p2.pos.clone().sub(this.worldpos).multiplyScalar(dotRet2));
+          if (this.worldpos.x <= p2.pos.x && this.worldpos.z > p2.pos.z) {
+            collisionSound.play();
+            //this.theta2 -= 3;
+            //this.theta2 += 3;
+            p2.pos.x += 2;
+            p2.pos.x -= 2;
           }
+          if (this.worldpos.x > p2.pos.x && this.worldpos.z > p2.pos.z) {
+            collisionSound.play();
+            //this.theta2 += 3;
+            //this.theta2 += 3;
+            p2.pos.x -= 2;
+            p2.pos.x -= 2;
+          }
+          if (this.worldpos.x > p2.pos.x && this.worldpos.z <= p2.pos.z) {
+            collisionSound.play();
+            //this.theta2 += 3;
+            //this.theta2 -= 3;
+            p2.pos.x -= 2;
+            p2.pos.x += 2;
+          }
+          var distance = Math.sqrt((this.worldpos.x - p2.pos.x) * (this.worldpos.x - p2.pos.x) + (this.worldpos.z - p2.pos.z) * (this.worldpos.z - p2.pos.z));
+          var dotRet1, dotRet2;
+          dotRet1 = p2.vel.clone().sub(p2.vel.clone().multiplyScalar(-1)).dot(this.worldpos.clone().sub(p2.pos)) / (distance * distance);
+          dotRet2 = p2.vel.clone().sub(p2.vel.clone().multiplyScalar(-1)).dot(p2.pos.clone().sub(this.worldpos)) / (distance * distance);
+          this.vel = this.vel.clone().sub(this.worldpos.clone().sub(p2.pos).multiplyScalar(dotRet1));
+          p2.vel = p2.vel.clone().sub(p2.pos.clone().sub(this.worldpos).multiplyScalar(dotRet2));
+        }
+        else{
+          console.log("NO!?");
         }
       }
     }
 
     class Circle {
       constructor() {
+        //this.pos = new THREE.Vector3(Math.random() * (64 + 64) - 64, 0, Math.random() * (89 + 89) - 89);
         this.pos = new THREE.Vector3(0,0,0);
         this.vel = new THREE.Vector3(Math.random() * (100 + 100) - 100, 0, Math.random() * (100 + 100) - 100);
         this.mass = 1;
@@ -230,6 +184,16 @@
         this.light = new THREE.PointLight();
       }
 
+//      intersect(other) {
+//        //using multiplications because it's faster than Math.pow
+//        var distance = Math.sqrt((this.pos.x - other.pos.x) * (this.pos.x - other.pos.x) + (this.pos.z - other.pos.z) * (this.pos.z - other.pos.z));
+//        return distance <= 7;
+//      }
+      /*collisionInvalid() {
+        if (this.pos.z >= 84 && this.pos.x > -20 && this.pos.x < 20) {
+            this.pos.set(0,0,0);
+        }
+      }*/
       collisionWall() {
         if (this.pos.x > 33.5) {
           collisionSoundWall.play();
@@ -250,6 +214,44 @@
           collisionSoundWall.play();
           this.vel.z *= -1;
           this.pos.z = -45.5;
+        }
+      }
+      CollisionOfEach(p2) {
+        if (this.intersect(p2)) {
+          if (this.pos.x <= p2.pos.x && this.pos.z <= p2.pos.z) {
+            collisionSound.play();
+            this.pos.x -= 0.2;
+            this.pos.z -= 0.2;
+            p2.pos.x += 0.2;
+            p2.pos.x += 0.2;
+          }
+          if (this.pos.x <= p2.pos.x && this.pos.z > p2.pos.z) {
+            collisionSound.play();
+            this.pos.x -= 0.2;
+            this.pos.z += 0.2;
+            p2.pos.x += 0.2;
+            p2.pos.x -= 0.2;
+          }
+          if (this.pos.x > p2.pos.x && this.pos.z > p2.pos.z) {
+            collisionSound.play();
+            this.pos.x += 0.2;
+            this.pos.z += 0.2;
+            p2.pos.x -= 0.2;
+            p2.pos.x -= 0.2;
+          }
+          if (this.pos.x > p2.pos.x && this.pos.z <= p2.pos.z) {
+            collisionSound.play();
+            this.pos.x += 0.2;
+            this.pos.z -= 0.2;
+            p2.pos.x -= 0.2;
+            p2.pos.x += 0.2;
+          }
+          var distance = Math.sqrt((this.pos.x - p2.pos.x) * (this.pos.x - p2.pos.x) + (this.pos.z - p2.pos.z) * (this.pos.z - p2.pos.z));
+          var dotRet1, dotRet2;
+          dotRet1 = this.vel.clone().sub(p2.vel).dot(this.pos.clone().sub(p2.pos)) / (distance * distance);
+          dotRet2 = p2.vel.clone().sub(this.vel).dot(p2.pos.clone().sub(this.pos)) / (distance * distance);
+          this.vel = this.vel.clone().sub(this.pos.clone().sub(p2.pos).multiplyScalar(dotRet1));
+          p2.vel = p2.vel.clone().sub(p2.pos.clone().sub(this.pos).multiplyScalar(dotRet2));
         }
       }
     }
@@ -308,9 +310,7 @@
     var pickables = [];
 
     var clock = new THREE.Clock();
-    var now = 0;
-    var previousEnd = new THREE.Vector3();
-    var previousEnd2 = new THREE.Vector3();
+    var paddlePos = new THREE.Vector3();
     ///
 
     init();
@@ -444,14 +444,14 @@
       ////////////////////////////////////////////////////////////////
       //pucks & lights
       ///new
-      twoLinkArm = new TwoLinkArm (1);  // global 
+      twoLinkArm = new TwoLinkArm ();  // global 
       twoLink = twoLinkArm.init();
       scene.add (twoLink);
       twoLink.position.set (0,0,50)
       twoLinkArm.pos.set(0,0,10)
       twoLinkArm.worldpos.set(0,0,40)
 
-      twoLinkArm2 = new TwoLinkArm (2);  // global 
+      twoLinkArm2 = new TwoLinkArm ();  // global 
       twoLink2 = twoLinkArm2.init();
       scene.add (twoLink2);
       twoLink2.position.set (0,0,-50)
@@ -492,7 +492,7 @@
       event.preventDefault();
       mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
       mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
-
+      // find intersections
       raycaster.setFromCamera(mouse, camera);
       var intersects = raycaster.intersectObjects(pickables);
       
@@ -504,6 +504,10 @@
         }
         twoLinkArm.target.copy(twoLink.worldToLocal(intersects[0].point));
       }
+      
+//      event.preventDefault();
+//      mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+//      mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
 
       var dis = Math.sqrt(
         (twoLink.position.x - pucks[0].pos.x) * (twoLink.position.x - pucks[0].pos.x) +
@@ -522,14 +526,33 @@
           pucks[0].vel.x = intersects[0].point.x * 2;
           pucks[0].vel.z = -intersects[0].point.z * 2;
         } else if (dis <= 23) {
+//          intersects[0].point.x *= 1.5;
+//          intersects[0].point.z *= -1.5;
+//          intersects[0].point.y *= 0;
+          ///////////////////////////////////////////////////////
           twoLinkArm.target.copy(twoLink.worldToLocal(pucks[0].pos.clone()));
+          ///////////////////////////////////////////////////////
+//          let oldlink1x = 0;
+//          let oldlink1z = 40;
+//          twoLinkArm.worldpos.x = (oldlink1x * Math.cos(twoLinkArm.theta1)) -  (oldlink1z * Math.sin(twoLinkArm.theta1));
+//          twoLinkArm.worldpos.z = (oldlink1x * Math.sin(twoLinkArm.theta1)) +  (oldlink1z * Math.cos(twoLinkArm.theta1));
+//
+//          let oldlink2x = twoLinkArm.worldpos.z;
+//          let oldlink2z = twoLinkArm.worldpos.x;
+//          twoLinkArm.worldpos.x = (oldlink2x * Math.cos(twoLinkArm.theta2)) -  (oldlink2z * Math.sin(twoLinkArm.theta2));
+//          twoLinkArm.worldpos.z = (oldlink2x * Math.sin(twoLinkArm.theta2)) +  (oldlink2z * Math.cos(twoLinkArm.theta2));
+
           twoLinkArm.CollisionOfPuck(pucks[0]);
           let dislook = twoLinkArm.getDistance(pucks[0]);
-          //console.log("distnce with arm1 and puck : " +　dislook);
+          console.log("distnce with arm1 and puck : " +　dislook);
           ///////////////////////////////////////////////////////
           console.log("hit");
+//          pucks[0].vel.sub(pucks[0].pos.clone().sub(twoLink.position).multiplyScalar(pucks[0].vel.clone().sub(intersects[0].point).dot(pucks[0].pos.clone().sub(twoLink.position)) / (pucks[0].pos.clone().distanceToSquared(twoLink.position))));
+//          pucks[0].vel.y = 0;
         }
       }
+      
+      
     }
     function animate() {
       soundVal += sign * 0.01;
@@ -544,88 +567,99 @@
       for (let i = 0; i < numOfPucks; i++) {
         pucks[i].pos.add(pucks[i].vel.clone().multiplyScalar(dt));
         pucks[i].collisionWall();
+        //pucks[i].collisionInvalid();
         pucks[i].mesh.position.copy(pucks[i].pos);
         pucks[i].light.position.set(pucks[i].pos.x, pucks[i].pos.y, pucks[i].pos.z);
+//        for (let j = 0; j < numOfPucks; j++) {
+//          if (i != j) {
+//            pucks[i].CollisionOfEach(pucks[j]);
+//          }
+//        }
       }
+      
+      
       twoLinkArm2.target.copy(twoLink2.worldToLocal(pucks[0].pos.clone()));
       ///////
       
-      ///////////////////////////////////////////////////
+      /////////////////////////////////////////////////////////////////
+//      oldlink1x = 0;
+//      oldlink1z = -40;
+//      twoLinkArm2.worldpos.x = (oldlink1x * Math.cos(twoLinkArm2.theta1)) -  (oldlink1z * Math.sin(twoLinkArm2.theta1));
+//      twoLinkArm2.worldpos.z = (oldlink1x * Math.sin(twoLinkArm2.theta1)) +  (oldlink1z * Math.cos(twoLinkArm2.theta1));
+//
+//      oldlink2x = twoLinkArm2.worldpos.z;
+//      oldlink2z = twoLinkArm2.worldpos.x;
+//      twoLinkArm2.worldpos.x = (oldlink2x * Math.cos(twoLinkArm2.theta2)) -  (oldlink2z * Math.sin(twoLinkArm2.theta2));
+//      twoLinkArm2.worldpos.z = (oldlink2x * Math.sin(twoLinkArm2.theta2)) +  (oldlink2z * Math.cos(twoLinkArm2.theta2));
+
+      //light2.position.set(twoLinkArm2.worldpos.x/4, twoLinkArm2.worldpos.y, (twoLinkArm2.worldpos.z-400)/4);
+      //light2.position.set(twoLinkArm2.link2.localToWorld(twoLinkArm2.paddle.position.clone()));
       var temp2 = twoLinkArm2.link2.localToWorld(twoLinkArm2.paddle.position.clone());
       light2.position.set(temp2.x, temp2.y, temp2.z);
       twoLinkArm2.worldpos.set(temp2.x, temp2.y, temp2.z);
-      twoLinkArm2.CollisionOfPuck(pucks[0]);
+      //console.log(twoLinkArm2.link2.localToWorld(twoLinkArm2.paddle.position.clone()));
+      //twoLinkArm2.worldpos.set(twoLinkArm2.worldpos.x/4, twoLinkArm2.worldpos.y, (twoLinkArm2.worldpos.z-400)/4);
+      //twoLinkArm2.worldpos.set(twoLinkArm2.link2.localToWorld(twoLinkArm2.paddle.position.clone()));
 
+      twoLinkArm2.CollisionOfPuck(pucks[0]);
+      /////////////////////////////
+      //collisionPaddle(pucks[0]);
       referee(pucks[0]);
+
+//      if (pucks[0].vel.x != 0 && pucks[0].vel.z != 0) {
+//        pucks[0].mesh.position.copy(pucks[0].pos);
+//      }
+      
       
       requestAnimationFrame(animate);
-      //update();
-      updateArms();
+      update();
       renderer.render(scene, camera);
     }
-
-//    function update() {
-//      pucks[0].pos.y = 0;
-//      var thetas = [twoLinkArm.theta1, twoLinkArm.theta2];
-//      twoLinkArm.ccdSys.solve (twoLinkArm.target, thetas);
-//      twoLinkArm.update (thetas)
-//
-//      thetas = [twoLinkArm2.theta1, twoLinkArm2.theta2];
-//      twoLinkArm2.ccdSys.solve (twoLinkArm2.target, thetas);
-//      twoLinkArm2.update (thetas);
-//
-//    }
     
-    function updateArms() {
-      var newTime = clock.getElapsedTime();   // seconds since the program starts
-      var deltaT = newTime - now;
+//    function collisionPaddle(puck) {
+//      var dis = Math.sqrt(
+//        (twoLink2.position.x - puck.pos.x) * (twoLink2.position.x - puck.pos.x) +
+//        (twoLink2.position.z - puck.pos.z) * (twoLink2.position.z - puck.pos.z)
+//      );
+//
+//      if (dis <= 23) {
+//        console.log(twoLinkArm2.target);
+//        puck.vel.sub(puck.pos.clone().sub(twoLink2.position).multiplyScalar(puck.vel.clone().sub(twoLinkArm2.target.clone().multiplyScalar(-2)).dot(puck.pos.clone().sub(twoLink2.position)) / (puck.pos.clone().distanceToSquared(twoLink2.position))));
+//        puck.vel.y = 0;
+//        collisionsound.play();
+//      }
+//    }
+
+    function update() {
       pucks[0].pos.y = 0;
-      
-      // linker0
       var thetas = [twoLinkArm.theta1, twoLinkArm.theta2];
       twoLinkArm.ccdSys.solve (twoLinkArm.target, thetas);
       twoLinkArm.update (thetas)
-      // how to get end effector position
-      let endNow = twoLinkArm.link2.localToWorld ( twoLinkArm.paddle.position.clone() );
-      // how to get end effector velocity
-      let vel =  endNow.clone().sub (previousEnd).divideScalar (deltaT) ;
-      twoLinkArm.vel.x = vel.x.toFixed(1);
-      twoLinkArm.vel.z = vel.z.toFixed(1);
-      //console.log ("arm1 vel : " + vel.x.toFixed(1) + ',' + vel.z.toFixed(1) )
-      
-      // linker1
+
       thetas = [twoLinkArm2.theta1, twoLinkArm2.theta2];
       twoLinkArm2.ccdSys.solve (twoLinkArm2.target, thetas);
-      twoLinkArm2.update (thetas);
-      // how to get end effector position
-      let endNow2 = twoLinkArm2.link2.localToWorld ( twoLinkArm2.paddle.position.clone());
-      // how to get end effector velocity
-      vel = endNow2.clone().sub(previousEnd2).divideScalar(deltaT) ;
-      //console.log ("arm2 vel : "+vel.x.toFixed(1) + ',' + vel.z.toFixed(1));
-      twoLinkArm2.vel.x = vel.x.toFixed(1);
-      twoLinkArm2.vel.z = vel.z.toFixed(1);
-      //console.log(twoLinkArm);
-      //console.log (pucks[0].vel);
-      now = newTime;
-      previousEnd.copy (endNow);
-      previousEnd2.copy (endNow2);
+      twoLinkArm2.update (thetas)
+
     }
-    
     function referee(puck) {
       
       if(pucks[0].pos.z >= 45.5 && pucks[0].pos.x >= -10 && pucks[0].pos.x <= 10 && pucks[0].vel.x != 0 && pucks[0].vel.z != 0) {
+        //console.log(pucks[0].pos);
         console.log("You lose...");
         alert("You lose...");
         pucks[0].vel.x = pucks[0].vel.z = 0;
         pucks[0].pos.x = pucks[0].pos.z = 0;
       }
       else if(pucks[0].pos.z <= -45.5 && pucks[0].pos.x >= -10 && pucks[0].pos.x <= 10 && pucks[0].vel.x != 0 && pucks[0].vel.z != 0) {
+        //console.log(pucks[0].pos);
         console.log("You win!!");
         alert("You win!!");
         pucks[0].vel.x = pucks[0].vel.z = 0;
         pucks[0].pos.x = pucks[0].pos.z = 0;
       }
     }
+    // important to add this in jsfiddle!
+    window.focus();
 
   </script>
 </body>
