@@ -102,9 +102,9 @@
         ////////////////////////////////////left arm
         let L3 = L1 * 0.8, L4 = L2 * 0.8;
         
-        let leftuparm = new THREE.Object3D();
+        this.leftuparm = new THREE.Object3D();
         let leftuparmMesh = new THREE.Mesh (new THREE.BoxGeometry(0.8, L4, 0.8), skinMat);
-        leftuparm.add (leftuparmMesh);
+        this.leftuparm.add (leftuparmMesh);
         leftuparmMesh.rotation.x = -Math.PI/12;
         leftuparmMesh.position.y = -L4/2+7.5;
         leftuparmMesh.position.z = 2.7;
@@ -127,9 +127,9 @@
         ////////////////////////////////////end left arm
         
         ////////////////////////////////////right arm
-        let rightuparm = new THREE.Object3D();
+        this.rightuparm = new THREE.Object3D();
         let rightuparmMesh = new THREE.Mesh (new THREE.BoxGeometry(0.8, L4, 0.8), skinMat);
-        rightuparm.add (rightuparmMesh);
+        this.rightuparm.add (rightuparmMesh);
         rightuparmMesh.rotation.x = Math.PI/12;
         rightuparmMesh.position.y = -L4/2+7.5;
         rightuparmMesh.position.z = -2.7;
@@ -220,13 +220,13 @@
         leftuparmMesh.add(leftshoulder);
         leftuparmMesh.add(leftElbow);
         leftarmMesh.add(leftHand);
-        body.add (leftuparmMesh);
+        body.add (this.leftuparm);
         
         rightuparmMesh.add(rightarmMesh);
         rightuparmMesh.add(rightshoulder);
         rightuparmMesh.add(rightElbow);
         rightarmMesh.add(rightHand);
-        body.add (rightuparmMesh);
+        body.add (this.rightuparm);
         
         
         body.add (this.leftthigh);
@@ -261,7 +261,7 @@
     const L2 = 5.2
     const L1 = 4.8
     const Lh = 3.3
-    const Hh = 9.3  // tunable ...
+    var Hh = 9.3  // tunable ...
     const Hr = 0.6;
     var Ts = 1;
     const Fc = 1.0;
@@ -272,11 +272,14 @@
     var useGyro = true;
 
     var body, body2;
-    var bodyball = new THREE.Mesh(new THREE.SphereGeometry(1, 32, 32, 20), new THREE.MeshBasicMaterial({color:'white'}));
-    var leftfootball = new THREE.Mesh(new THREE.SphereGeometry(1, 32, 32, 20), new THREE.MeshBasicMaterial({color:'green'}));
-    var rightfootball = new THREE.Mesh(new THREE.SphereGeometry(1, 32, 32, 20), new THREE.MeshBasicMaterial({color:'red'}));
-    var rightkneeball = new THREE.Mesh(new THREE.SphereGeometry(1, 32, 32, 20), new THREE.MeshBasicMaterial({color:'red'}));
+    var bodyball = new THREE.Mesh(new THREE.SphereGeometry(0.3, 32, 32, 20), new THREE.MeshBasicMaterial({color:'white'}));
+    var leftfootball = new THREE.Mesh(new THREE.SphereGeometry(0.3, 32, 32, 20), new THREE.MeshBasicMaterial({color:'green'}));
+    var rightfootball = new THREE.Mesh(new THREE.SphereGeometry(0.3, 32, 32, 20), new THREE.MeshBasicMaterial({color:'red'}));
+    
+    var lefthandball = new THREE.Mesh(new THREE.SphereGeometry(0.3, 32, 32, 20), new THREE.MeshBasicMaterial({color:'green'}));
+    var righthandball = new THREE.Mesh(new THREE.SphereGeometry(0.3, 32, 32, 20), new THREE.MeshBasicMaterial({color:'red'}));
     var clock = new THREE.Clock();
+    
     var leftpos = [0,0];
     var rightpos = [LS,0];
     var bodypos = [LS/2,0];
@@ -288,12 +291,12 @@
       stopkey = !stopkey;
       if (stopkey) {
         $('#play').text('Walk')
-        clock.stop()
+        //clock.stop()
         console.log("w")
         //soundTrack.pause()
       } else {
         $('#play').text('Stop')
-        clock.start()
+        //clock.start()
         console.log("s")
         //soundTrack.play()
       }
@@ -367,7 +370,7 @@
 
       document.body.appendChild(renderer.domElement); ///////////////////////////////////////////////////////////
       scene.add(bodyball, leftfootball, rightfootball);
-      
+      scene.add(lefthandball, righthandball);
       
       ////////////////////////////////
       gcontrol = { //new function()
@@ -380,7 +383,7 @@
       gui.domElement.id = 'gui';
       gui.remember(gcontrol);
       
-      var control_Vf = gui.addFolder('control_Vf');
+      var control_Vf = gui.addFolder('speed_control');
       control_Vf.add(gcontrol, 'Vf', 2.5, 12.7);
       
       //////// floor
@@ -438,6 +441,7 @@
       
       if(stopkey == false) {
         //console.log("play");
+        Hh = 9.3;
         var tt = clock.getElapsedTime();
         var data = trackers (tt);
 
@@ -451,6 +455,11 @@
         bodyball.position.x = bodypos[0];
         bodyball.position.y = bodypos[1];
         var n = Math.floor(tt/Ts);
+        
+        
+        //console.log(biped.leftuparm.children[0]);
+        biped.leftuparm.children[0].rotation.z = Math.cos(tt)/4;
+        biped.rightuparm.children[0].rotation.z= -Math.cos(tt)/4;
         // n is even: left is swing
         // n is odd:  right is swing
         if (Math.floor(n/2)*2 === n) { // n is even
@@ -459,12 +468,24 @@
           leftfootball.position.y = leftpos[1];
           leftfootball.position.z = 1.5;
           leftfootball.position.x = leftpos[0];
+          
+          rightpos[1] = 0;
+          rightpos[0] += 0;
+          rightfootball.position.y = rightpos[1];
+          rightfootball.position.z = -1.5;
+          rightfootball.position.x = rightpos[0];
         } else { // n is odd
           rightpos[1] = data[1];
           rightpos[0] += 2*Vf*dt;
           rightfootball.position.y = rightpos[1];
           rightfootball.position.z = -1.5;
           rightfootball.position.x = rightpos[0];
+          
+          leftpos[1] = 0;
+          leftpos[0] += 0;
+          leftfootball.position.y = leftpos[1];
+          leftfootball.position.z = 1.5;
+          leftfootball.position.x = leftpos[0];
         }
         bodyball.position.set (bodypos[0], bodypos[1], 0);
         body.position.set (bodypos[0], bodypos[1], 0);
@@ -480,22 +501,61 @@
         
       }
       else {
-        clock.stop();
+        
         console.log("stop");
+        //Vf = 0.1;
+        Hh = 10;
         var tt = clock.getElapsedTime();
         var data = trackers (tt);
-//        leftpos[1] = data[1];
-//        leftpos[0] += 2*Vf*dt;
-//        rightpos[1] = data[1];
-//        rightpos[0] += 2*Vf*dt;
-//        let thetas = [0,0], thetas2 = [0,0];
-//        biped.target.copy (body.worldToLocal (new THREE.Vector3(leftpos[0], leftpos[1], 0)))
-//        biped.ccdSys.solve (biped.target, thetas);
-//        biped.update (thetas, thetas2);
-//
-//        biped.target2.copy (body.worldToLocal (new THREE.Vector3(rightpos[0], rightpos[1], 0)))
-//        biped.ccdSys.solve (biped.target2, thetas2);
-//        biped.update (thetas, thetas2);
+        // compute my own delta ...
+        var dt = tt - nowTime;
+        cumtime += dt;
+        nowTime = tt;
+        
+        bodypos[0] += 0*dt;
+        bodypos[1] = 10;
+        bodyball.position.x = bodypos[0];
+        bodyball.position.y = bodypos[1];
+        var n = Math.floor(tt/Ts);
+        // n is even: left is swing
+        // n is odd:  right is swing
+        
+        if (Math.floor(n/2)*2 === n) { // n is even
+          leftpos[1] = 0;
+          leftpos[0] += 0;
+          leftfootball.position.y = leftpos[1];
+          leftfootball.position.z = 1.5;
+          leftfootball.position.x = leftpos[0];
+          
+          rightpos[1] = 0;
+          rightpos[0] += 0;
+          rightfootball.position.y = rightpos[1];
+          rightfootball.position.z = -1.5;
+          rightfootball.position.x = rightpos[0];
+        } else { // n is odd
+          rightpos[1] = 0;
+          rightpos[0] += 0;
+          rightfootball.position.y = rightpos[1];
+          rightfootball.position.z = -1.5;
+          rightfootball.position.x = rightpos[0];
+          
+          leftpos[1] = 0;
+          leftpos[0] += 0;
+          leftfootball.position.y = leftpos[1];
+          leftfootball.position.z = 1.5;
+          leftfootball.position.x = leftpos[0];
+        }
+        bodyball.position.set (bodypos[0], bodypos[1], 0);
+        body.position.set (bodypos[0], bodypos[1], 0);
+
+        let thetas = [-1e-3,-1e-3], thetas2 = [-1e-3,-1e-3];
+        biped.target.copy (body.worldToLocal (new THREE.Vector3(leftpos[0], leftpos[1], 0)))
+        biped.ccdSys.solve (biped.target, thetas);
+        biped.update (thetas, thetas2);
+
+        biped.target2.copy (body.worldToLocal (new THREE.Vector3(rightpos[0], rightpos[1], 0)))
+        biped.ccdSys.solve (biped.target2, thetas2);
+        biped.update (thetas, thetas2);
       }
 
     }
