@@ -37,6 +37,45 @@ function getRandom(min,max){
     return Math.floor(Math.random()*max)+min;
 };
 
+////////////////////////////////////////
+// create an Object3D of the given object
+// so that it is centered at +Y axis
+function unitize (object, targetSize) {  
+	// find bounding box of 'object'
+	var box3 = new THREE.Box3();
+	box3.setFromObject (object);
+	var size = new THREE.Vector3();
+	size.subVectors (box3.max, box3.min);
+	var center = new THREE.Vector3();
+	center.addVectors(box3.max, box3.min).multiplyScalar (0.5);
+	console.log ('center: ' + center.x + ', '+center.y + ', '+center.z );
+	console.log ('size: ' + size.x + ', ' +  size.y + ', '+size.z );
+    
+	// uniform scaling according to objSize
+	var objSize = findMax (size);
+	var scaleSet = targetSize/objSize;
+	var theObject =  new THREE.Object3D();
+    object.maxX = center.x + 6;
+    object.maxY = center.z + 10;
+    object.minX = center.x - 6;
+    object.minY = center.z - 10;
+    object.w = 20;
+    object.h = 12;
+    theObject.add (object);
+	object.scale.set (scaleSet, scaleSet, scaleSet);
+	object.position.set (-center.x*scaleSet, -center.y*scaleSet + size.y/2*scaleSet, -center.z*scaleSet);
+	return theObject;
+	
+	// helper function
+	function findMax(v) {
+		if (v.x > v.y) {
+			return v.x > v.z ? v.x : v.z;
+		} else { // v.y > v.x
+			return v.y > v.z ? v.y : v.z;
+		} 
+	}
+}
+
 function init() {
     initThree();//new scene
 
@@ -54,7 +93,12 @@ function init() {
     camera.position.y = 700;
     scene.add(camera)
     //end add camera
-
+  
+    //add light
+    let ambientLight = new THREE.AmbientLight( 0xffffff, 1.0 );
+	scene.add( ambientLight );
+    //end add light
+  
     //add renderer
     renderer = new THREE.WebGLRenderer({
       alpha: true
@@ -135,109 +179,56 @@ function init() {
 	////////////////////////////////////////////////////////////
 	// setup markerRoots
 	////////////////////////////////////////////////////////////
-    
 	let loader = new THREE.TextureLoader();
 	let texture = loader.load( './border.png' );
 		
-	let patternArray = ["no_strong", "kanji", "hiro", "no_strong", "no_strong", "no_strong", "no_strong"];
+	let patternArray = ["pattern_map_pin", "kanji", "hiro", "pattern_map_pin", "no_strong", "no_strong", "no_strong"];
 	let colorArray   = [0xff0000, 0xff8800, 0xffff00, 0x00cc00, 0x0000ff, 0xcc00ff, 0xcccccc];
+    markerRoot = new THREE.Group();
+    scene.add(markerRoot);
 	for (let i = 0; i < 3; i++)
-	{
-		markerRoot = new THREE.Group();
-		scene.add(markerRoot);
+	{	
 		let markerControls = new THREEx.ArMarkerControls(arToolkitContext, markerRoot, {
 			type : 'pattern', patternUrl : "../../data/data/patt." + patternArray[i],
 		});
 	
 		let mesh = new THREE.Mesh( 
-			new THREE.CylinderGeometry( 0.5, 0.5, 0.2, 32 ),//new THREE.CubeGeometry(1.25,1.25,1.25), 
-			new THREE.MeshBasicMaterial({color:colorArray[i], map:texture, transparent:true, opacity:0.5}) 
+			new THREE.CylinderGeometry( 10, 10, 0.2, 32 ),
+            //new THREE.CubeGeometry(1.25,1.25,1.25),
+            //new THREE.PlaneBufferGeometry(1,1, 4,4),
+			new THREE.MeshBasicMaterial({color:colorArray[i],// map:texture,
+                                         transparent:true, opacity:0.5}) 
 		);
-		mesh.position.y = 1.25/2;
+		mesh.position.y = 0.25;
 		markerRoot.add( mesh );
         ////////////////////////////////////////////////////////////
         // load obj
         ////////////////////////////////////////////////////////////
         // model
-        var onProgress = function(xhr) {
-            if (xhr.lengthComputable) {
-              var percentComplete = xhr.loaded / xhr.total * 100;
-              console.log(Math.round(percentComplete, 2) + '% downloaded');
-            }
-        };
-        var onError = function(xhr) {};
-        var mtlLoader = new THREE.MTLLoader();
-        mtlLoader.setPath('lighthouse/');
-        mtlLoader.load('lighthouse.mtl', function(materials) {
-            materials.preload();
-            var objLoader = new THREE.OBJLoader();
-            objLoader.setMaterials(materials);
-            objLoader.setPath('lighthouse/');
-            objLoader.load('lighthouse.obj', function(object) {
-                //var theObject =  unitize (object, 20);
-                theObjectAll = unitize (object, 20);
-                //yellow_box = new THREE.BoxHelper (theObjectAll);
-                scene.add (theObjectAll);				
-                //scene.add (yellow_box);
-                //////// MATERIAL ADJUSTMENT for porsche ///////////////
-                // transparent window: double-side fix
-                object.traverse (
-                    function(mesh) {
-                        if (mesh instanceof THREE.Mesh) {
-                            mesh.material.side = THREE.DoubleSide;
-                        }
-                    }
-                );
-            }, onProgress, onError);
-        });
-        /*function onProgress(xhr) { console.log( (xhr.loaded / xhr.total * 100) + '% loaded' ); }
+        ///*
+        function onProgress(xhr) { console.log( (xhr.loaded / xhr.total * 100) + '% loaded' ); }
         function onError(xhr) { console.log( 'An error happened' ); }
 
         new THREE.MTLLoader()
-            .setPath( './lighthouse/' )
-            .load( 'lighthouse.mtl', function ( materials ) {
+            .setPath( './Bishop/' )
+            .load( 'Bishop.mtl', function ( materials ) {
                 materials.preload();
                 new THREE.OBJLoader()
                     .setMaterials( materials )
-                    .setPath( './models/' )
-                    .load( 'lighthouse.obj', function ( group ) {
+                    .setPath( './Bishop/' )
+                    .load( 'Bishop.obj', function ( group ) {
+                        //var theObject =  unitize (group, 20);
                         mesh0 = group.children[0];
                         mesh0.material.side = THREE.DoubleSide;
-                        mesh0.position.y = 0.25;
-                        mesh0.scale.set(0.25,0.25,0.25);
+                        //mesh0.rotation.x= -Math.PI/2;
+                        //mesh0.rotation.y= 1.5*Math.PI;
+                        mesh0.position.y = 60;
+                        mesh0.scale.set(30,30,30);
                         markerRoot.add(mesh0);
                     }, onProgress, onError );
-            });*/
+            });//*/
     }
     
-    
-    ////////////////////////////////////////////////////////////
-	// setup smoothedRoot
-	////////////////////////////////////////////////////////////
-    // interpolates from last position to create smoother transitions when moving.
-	// parameter lerp values near 0 are slow, near 1 are fast (instantaneous).
-	let smoothedRoot = new THREE.Group();
-	scene.add(smoothedRoot);
-	smoothedControls = new THREEx.ArSmoothedControls(smoothedRoot, {
-		lerpPosition: 0.8,
-		lerpQuaternion: 0.8,
-		lerpScale: 1,
-		// minVisibleDelay: 1,
-		// minUnvisibleDelay: 1,
-	});
-
-	let geometry1	= new THREE.CubeGeometry(1,1,1);
-	let material1	= new THREE.MeshNormalMaterial({
-		transparent : true,
-		opacity: 0.3,
-		side: THREE.DoubleSide
-	}); 
-	
-	mesh1 = new THREE.Mesh( geometry1, material1 );
-	mesh1.position.y = 0.5;
-	
-	// markerRoot1.add( mesh1 );
-	smoothedRoot.add( mesh1 );
 //    //**********build a smoothedControls
 //	var smoothedRoot = new THREE.Group()
 //	scene.add(smoothedRoot)
@@ -265,10 +256,6 @@ function update()
 	// update artoolkit on every frame
 	if ( arToolkitSource.ready !== false )
 		arToolkitContext.update( arToolkitSource.domElement );
-		
-	// additional code for smoothed controls
-	smoothedControls.update(markerRoot);
-  
     console.log("here?");
 }
 
