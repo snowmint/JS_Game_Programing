@@ -2,7 +2,7 @@
 // global variables
 //var camera, renderer;
 var agent;
-var markerRoot;
+//var markerRoot;
 var artoolkitMarker;
 var onRenderFcts= [];
 var scene, camera, renderer, clock, deltaTime, totalTime;
@@ -10,7 +10,8 @@ var arToolkitSource, arToolkitContext;
 var markerRoot1, markerRoot2;
 var smoothedControls;
 var stats;
-
+var clock, deltaTime, totalTime;
+var hiro_pos_x, hiro_pos_z;
 // program starts here ...
 init();
 animate();
@@ -88,22 +89,23 @@ function init() {
     }
 
     //add camera
-    camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 1, 5000);
+//    camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 1, 5000);
+    camera = new THREE.Camera();
     camera.position.z = 300;
     camera.position.y = 700;
     scene.add(camera)
     //end add camera
   
     //add light
-    let ambientLight = new THREE.AmbientLight( 0xffffff, 1.0 );
+    let ambientLight = new THREE.AmbientLight( 0xcccccc, 2.0 );
 	scene.add( ambientLight );
     //end add light
   
     //add renderer
     renderer = new THREE.WebGLRenderer({
+      antialias : true,
       alpha: true
     });
-    renderer.setSize(window.innerWidth, window.innerHeight);
     renderer.setClearColor(new THREE.Color('lightgrey'), 0);
     renderer.setSize( window.innerWidth, window.innerHeight );
     renderer.domElement.style.position = 'absolute';
@@ -111,6 +113,12 @@ function init() {
     renderer.domElement.style.left = '0px';
     document.body.appendChild( renderer.domElement );
     //end add renderer
+  
+    //add clock
+    clock = new THREE.Clock();
+	deltaTime = 0;
+	totalTime = 0;
+    //end add clock
 
     //add controls
     let controls = new THREE.OrbitControls(camera, renderer.domElement);
@@ -146,7 +154,16 @@ function init() {
 	}
 
 	arToolkitSource.init(function onReady(){
-		onResize()
+		onResize();
+        console.log(arToolkitContext.arController);
+        if( arToolkitContext.arController !== null ){
+          arToolkitContext.arController.addEventListener('getMarker', function(ev) {
+          console.log('marker pos: ', ev.data.marker.pos);
+          //******try get marker pos
+          hiro_pos_x = ev.data.marker.pos[0];
+          hiro_pos_z = ev.data.marker.pos[1];
+          });
+        };
 	});
 	
 	// handle resize event
@@ -182,24 +199,29 @@ function init() {
 	let loader = new THREE.TextureLoader();
 	let texture = loader.load( './border.png' );
 		
-	let patternArray = ["pattern_map_pin", "kanji", "hiro", "pattern_map_pin", "no_strong", "no_strong", "no_strong"];
+	let patternArray = ["pattern_map_pin", "kanji", "hiro", "no_strong", "no_strong", "no_strong", "no_strong"];
 	let colorArray   = [0xff0000, 0xff8800, 0xffff00, 0x00cc00, 0x0000ff, 0xcc00ff, 0xcccccc];
-    markerRoot = new THREE.Group();
-    scene.add(markerRoot);
-	for (let i = 0; i < 3; i++)
+//    markerRoot = new THREE.Group();
+//    scene.add(markerRoot);
+	for (let i = 0; i < 4; i++)
 	{	
+        let markerRoot = new THREE.Group();
+		scene.add(markerRoot);
 		let markerControls = new THREEx.ArMarkerControls(arToolkitContext, markerRoot, {
 			type : 'pattern', patternUrl : "../../data/data/patt." + patternArray[i],
 		});
 	
 		let mesh = new THREE.Mesh( 
-			new THREE.CylinderGeometry( 10, 10, 0.2, 32 ),
+			new THREE.CylinderGeometry( 30, 30, 0.2, 32 ),
             //new THREE.CubeGeometry(1.25,1.25,1.25),
             //new THREE.PlaneBufferGeometry(1,1, 4,4),
-			new THREE.MeshBasicMaterial({color:colorArray[i],// map:texture,
-                                         transparent:true, opacity:0.5}) 
+			new THREE.MeshBasicMaterial({color:colorArray[i], transparent:true, opacity:0.5})// map:texture,
 		);
-		mesh.position.y = 0.25;
+        if(patternArray[i] == "hiro"){
+          mesh.position.x = hiro_pos_x;
+          mesh.position.z = hiro_pos_z;
+        }
+		mesh.position.y = 1.25/2;
 		markerRoot.add( mesh );
         ////////////////////////////////////////////////////////////
         // load obj
@@ -210,20 +232,20 @@ function init() {
         function onError(xhr) { console.log( 'An error happened' ); }
 
         new THREE.MTLLoader()
-            .setPath( './Bishop/' )
-            .load( 'Bishop.mtl', function ( materials ) {
+            .setPath( './pawn/' )
+            .load( 'pawn.mtl', function ( materials ) {
                 materials.preload();
                 new THREE.OBJLoader()
                     .setMaterials( materials )
-                    .setPath( './Bishop/' )
-                    .load( 'Bishop.obj', function ( group ) {
+                    .setPath( './pawn/' )
+                    .load( 'pawn.obj', function ( group ) {
                         //var theObject =  unitize (group, 20);
                         mesh0 = group.children[0];
                         mesh0.material.side = THREE.DoubleSide;
                         //mesh0.rotation.x= -Math.PI/2;
                         //mesh0.rotation.y= 1.5*Math.PI;
-                        mesh0.position.y = 60;
-                        mesh0.scale.set(30,30,30);
+                        mesh0.position.y = 40;
+                        mesh0.scale.set(10,10,10);
                         markerRoot.add(mesh0);
                     }, onProgress, onError );
             });//*/
@@ -256,7 +278,11 @@ function update()
 	// update artoolkit on every frame
 	if ( arToolkitSource.ready !== false )
 		arToolkitContext.update( arToolkitSource.domElement );
-    console.log("here?");
+    //console.log("here?");
+}
+
+function render() {
+  renderer.render(scene, camera);
 }
 
 function animate() {
@@ -297,11 +323,10 @@ function animate() {
     counting = false;
   	alert ('                                            << game over >>' + '\n\n                                  Time Consuming : ' + minute + ' : ' + second + ' : ' + msecond + '\n\n                                 ' + agentB.name + " : " + agentB.score + '      ' + agentR.name + ' : ' + agentR.score);
   }
+  deltaTime = clock.getDelta();
+  totalTime += deltaTime;
   update();
   render();
   updateScoreBoard(agentB, agentR);
 }
 
-function render() {
-  renderer.render(scene, camera);
-}
