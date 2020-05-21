@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+
+<html>
+
+<head>
+<link rel="stylesheet" type="text/css" href="mystyle.css">
+</head>
+
+<body> 
+<div id="info">
+    Agent (Seek, Arrival, Collision)<br>
+    <div id="counter">00:00.000</div>
+    <p id="scoreboard"></p>
+    <p id="message"></p>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/108/three.min.js"></script>
+<script src='./js/MTLLoader.js'></script>
+<script src='./js/OBJLoader.js'></script>
+<script src="https://threejs.org/examples/js/controls/OrbitControls.js"></script>
+<script src="https://code.jquery.com/jquery-2.1.4.min.js"></script>
+<script>
+  var theObjectAll;
+  function unitize (object, targetSize) {  
+	// find bounding box of 'object'
+	var box3 = new THREE.Box3();
+	box3.setFromObject (object);
+	var size = new THREE.Vector3();
+	size.subVectors (box3.max, box3.min);
+	var center = new THREE.Vector3();
+	center.addVectors(box3.max, box3.min).multiplyScalar (0.5);
+	console.log ('center: ' + center.x + ', '+center.y + ', '+center.z );
+	console.log ('size: ' + size.x + ', ' +  size.y + ', '+size.z );
+    
+	// uniform scaling according to objSize
+	var objSize = findMax (size);
+	var scaleSet = targetSize/objSize;
+	var theObject =  new THREE.Object3D();
+    object.maxX = center.x;// + 6;
+    object.maxY = center.z;// + 10;
+    object.minX = center.x;// - 6;
+    object.minY = center.z;// - 10;
+    object.w = 20;
+    object.h = 12;
+    theObject.add (object);
+	object.scale.set (scaleSet, scaleSet, scaleSet);
+	object.position.set (-center.x*scaleSet, -center.y*scaleSet + size.y/2*scaleSet, -center.z*scaleSet);
+	return theObject;
+	
+	// helper function
+	function findMax(v) {
+		if (v.x > v.y) {
+			return v.x > v.z ? v.x : v.z;
+		} else { // v.y > v.x
+			return v.y > v.z ? v.y : v.z;
+		} 
+	}
+  }
+
+</script>
+
+<script src="./scene.js"></script>
+<script src="./threemain.js"></script>
+
+<script src="./agent0.js"></script>
+<script src="./obstacle.js"></script>
+<script src="./target.js"></script>
+<!-- must be before main.js -->
+
+<script src="./main.js"></script>
+</body>
+
+</html>

@@ -2,7 +2,7 @@
 // global variables
 //var camera, renderer;
 var agent;
-//var markerRoot;
+var markerRoot;
 var artoolkitMarker;
 var onRenderFcts= [];
 var scene, camera, renderer, clock, deltaTime, totalTime;
@@ -95,17 +95,23 @@ function init() {
     camera.position.y = 700;
     scene.add(camera)
     //end add camera
+   
+//    //HUD===============================================
+//    // for HUD scene
+//    sceneHUD = new THREE.Scene();
+//
+//    // eye-coordinate bounds
+//    halfH = 10;
+//    halfW = halfH * whRatio;
+//
+//    cameraHUD = new THREE.OrthographicCamera (-halfW,halfW, halfH,-halfH, -10,10);
+//    //cameraHUD.position.set (0,0,0)
+//    //HUD===============================================
 
     //add light
-    var ambientLight = new THREE.AmbientLight( 0xcccccc, 1 );//0.4
+    let ambientLight = new THREE.AmbientLight( 0xcccccc, 2.0 );
+	//scene.add( ambientLight );
 	scene.add( ambientLight );
-
-	var pointLight = new THREE.PointLight( 0xffffff, 1 );//0.8
-	camera.add( pointLight );
-  
-    var light = new THREE.DirectionalLight(0xffffff);//光源顏色
-    light.position.set(20, 10, 5);//光源位置
-    scene.add(light);//光源新增到場景中
     //end add light
   
     //add renderer
@@ -132,8 +138,7 @@ function init() {
     document.body.appendChild(renderer.domElement);
     //end add controls
     /////////////////////////////////////////////////////////////////////
-    var gridXZ = new THREE.GridHelper(800, 40, 0xff9696, 'white');
-    scene.add(gridXZ);
+    
     // in scene.js
     sceneFromJSON ( );  // using LevelDesigner
     //////////////////////////////////////////////////////////////////////////	
@@ -146,7 +151,7 @@ function init() {
 	// setup arToolkitSource
 	////////////////////////////////////////////////////////////
 
-	arToolkitSource = new THREEx.ArToolkitSource({
+	arToolkitSource = new THREE.ArToolkitSource({
 		sourceType : 'webcam',
 	});
 
@@ -214,6 +219,9 @@ function init() {
 	{	
         let markerRoot = new THREE.Group();
 		scene.add(markerRoot);
+        var gridXZ = new THREE.GridHelper(800, 40, 0xff9696, 'white');
+        markerRoot.add(gridXZ);
+        
 		let markerControls = new THREEx.ArMarkerControls(arToolkitContext, markerRoot, {
 			type : 'pattern', patternUrl : "../../data/data/patt." + patternArray[i],
 		});
@@ -234,7 +242,7 @@ function init() {
         // load obj
         ////////////////////////////////////////////////////////////
         // model
-        ///*
+        /*
         function onProgress(xhr) { console.log( (xhr.loaded / xhr.total * 100) + '% loaded' ); }
         function onError(xhr) { console.log( 'An error happened' ); }
 

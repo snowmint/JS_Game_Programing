@@ -2,7 +2,7 @@
 var scene;
 
 function initThree() {
-	scene = new THREE.Scene();
+	scene = new THREE.Scene();	
 }
 
 function updateScoreBoard(whichAgent1, whichAgent2) {
