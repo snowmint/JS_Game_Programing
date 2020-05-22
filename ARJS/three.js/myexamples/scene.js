@@ -19,16 +19,14 @@ function sceneFromJSON () {
   
   let myScene = JSON.parse (JSONStr);
   
-  scene.obstacles = [];
+  scene.obstacles = []
   myScene.obstacles.forEach (function (obs) {
-    let tmpobj = new Obstacle (new THREE.Vector3 (obs.center.x, obs.center.y, obs.center.z), 30);
-  	scene.obstacles.push (tmpobj);
-    //markerRoot.add (tmpobj);
+  	scene.obstacles.push (new Obstacle (new THREE.Vector3 (obs.center.x, obs.center.y, obs.center.z), 30))
   })
   
-  scene.targets = [];
-  /*myScene.targets.forEach (function (tt) {
-  	scene.targets.push (new Target (tt.id, new THREE.Vector3 (tt.pos.x, tt.pos.y, tt.pos.z) ));
-  })*/
+  scene.targets = []
+  myScene.targets.forEach (function (tt) {
+  	scene.targets.push (new Target (tt.id, new THREE.Vector3 (tt.pos.x, tt.pos.y, tt.pos.z) ))
+  })
 
 }

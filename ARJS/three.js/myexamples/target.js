@@ -6,7 +6,7 @@ class Target {
 		    new THREE.MeshBasicMaterial ({color:0xffe099, transparent: true, opacity: 0.9}));
 		this.found = false;  // default: not found yet
 		this.mesh.position.copy (pos)
-		scene.add (this.mesh);
+		markerRoot.add (this.mesh);
 	}
 	setFound (agent) {
 		this.found = true;
@@ -16,8 +16,8 @@ class Target {
 		agent.score += 10;			
 		
 		// remove from scene.targets
-		for (let i = 0; i < scene.targets.length; i++) {
-			if (scene.targets[i].id === this.id) scene.targets.splice (i, 1)
+		for (let i = 0; i < markerRoot.targets.length; i++) {
+			if (markerRoot.targets[i].id === this.id) markerRoot.targets.splice (i, 1)
 		}
 		
 	}

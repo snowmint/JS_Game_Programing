@@ -20,20 +20,61 @@ class Agent {
   constructor(name, pos, halfSize, color) {
   	this.name = name; //"BlueArrow";
     this.pos = pos.clone();
-    
     this.vel = new THREE.Vector3();
     this.force = new THREE.Vector3();
     this.target = null;
     this.halfSize = halfSize;  // half width
     this.mesh = agentMesh (this.halfSize, color);//0xaad4ff
-    this.MAXSPEED = 300;
-    this.ARRIVAL_R = 30;
+    /*var obj_origami;// = new THREE.Mesh();
+    
+    var onProgress = function(xhr) {
+    if (xhr.lengthComputable) {
+          var percentComplete = xhr.loaded / xhr.total * 100;
+          console.log(Math.round(percentComplete, 2) + '% downloaded');
+        }
+    };
+    var onError = function(xhr) {};
+    var mtlLoader = new THREE.MTLLoader();
+    mtlLoader.setPath('origami/');
+    mtlLoader.load('origami.mtl', function(materials) {
+        materials.preload();
+        var objLoader = new THREE.OBJLoader();
+        objLoader.setMaterials(materials);
+        objLoader.setPath('origami/');
+        objLoader.load('origami.obj', function(object) {
+            let yellow_box = new THREE.BoxHelper (object);
+            scene.add(yellow_box);
+            scene.add(object);
+            obj_origami = object;
+            object.traverse (
+                function(mesh) {
+                    if (mesh instanceof THREE.Mesh) {
+                        mesh.material.side = THREE.DoubleSide;
+                        mesh.material.color.setHex( 0x000000 );//color
+                        mesh.scale.set( 100, 100, 100 );
+                        mesh.position.x = pos[0];
+                        mesh.position.y = 0;
+                        mesh.position.z = pos[2];
+                    }
+                }
+            );
+        }, onProgress, onError);
+    });
+    //console.log(obj_origami);
+    this.mesh = obj_origami;
+    //this.mesh.scale.set( 100, 100, 100 );
+    //this.mesh.material.color.setHex( 0x000000 );//color
+    //this.mesh.position = pos.clone();
+    console.log(this.mesh);*/
+    
+    this.MAXSPEED = 400;//300
+    this.ARRIVAL_R = 30;//30
     this.size = 5;
     this.score = 0.00;
     
     // for orientable agent
     this.angle = 0;
-    scene.add (this.mesh);
+    markerRoot.add (this.mesh);
   }
   
   update(dt) {
@@ -49,7 +90,7 @@ class Agent {
     
     // collision
     let min = Infinity, whichOne;
-    let obs = scene.obstacles;
+    let obs = markerRoot.obstacles;
       
     for (let i = 0; i < obs.length; i++) {
         let distance = Math.sqrt(((this.pos.x)-(obs[i].center.x))*((this.pos.x)-(obs[i].center.x))+((this.pos.z)-(obs[i].center.z))*((this.pos.z)-(obs[i].center.z)))
@@ -63,8 +104,8 @@ class Agent {
 	let vhat = this.vel.clone().normalize();
     let point = obs[whichOne].center.clone().sub (this.pos) // c-p
     let proj  = point.dot(vhat);
-    const REACH = 80
-    const K = 85
+    const REACH = 70;//80
+    const K = 75;//85
     if(proj > 0 && proj < REACH) {
         let perp = new THREE.Vector3();
         perp.subVectors (point, vhat.clone().setLength(proj));
@@ -100,8 +141,8 @@ class Agent {
     }
     
     // Euler
-    this.pos.add(this.vel.clone().multiplyScalar(dt))
-    this.mesh.position.copy(this.pos)
+    this.pos.add(this.vel.clone().multiplyScalar(dt));
+    this.mesh.position.copy(this.pos);
     
     // for orientable agent
     // non PD version
@@ -113,8 +154,8 @@ class Agent {
   }
 
   findTarget () {
-  	console.log ('total: ' + scene.targets.length)
-  	let allTargets = scene.targets;
+  	console.log ('total: ' + markerRoot.targets.length)
+  	let allTargets = markerRoot.targets;
   	let minD = 1e10;
   	let d;
   	for (let i = 0; i < allTargets.length; i++) {
@@ -126,8 +167,8 @@ class Agent {
   	}
   }
   findObstacle () {
-  	console.log ('obstacle:' + scene.obstacles.length)
-  	let allObstacle = scene.obstacles;
+  	console.log ('obstacle:' + markerRoot.obstacles.length)
+  	let allObstacle = markerRoot.obstacles;
   	let minD = 1e10;
   	let d;
   	for (let i = 0; i < allObstacle.length; i++) {
