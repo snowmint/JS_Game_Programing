@@ -44,7 +44,7 @@ function init() {
   //scene = new THREE.Scene();
   camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 1, 5000);
   camera.position.z = 500;
-  camera.position.y = 700;
+  camera.position.y = 1000;
 
 
   renderer = new THREE.WebGLRenderer();
