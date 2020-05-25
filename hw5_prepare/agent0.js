@@ -165,6 +165,7 @@ class Agent {
   			this.setTarget (allTargets[i])
   		}
   	}
+    console.log("why?");
   }
   findObstacle () {
   	console.log ('obstacle:' + scene.obstacles.length)
@@ -181,6 +182,7 @@ class Agent {
   }
   setTarget(target) {
     this.target = target;
+    console.log("here?");
   }
   targetInducedForce(targetPos) {
     return targetPos.clone().sub(this.pos).normalize().multiplyScalar(this.MAXSPEED).sub(this.vel)

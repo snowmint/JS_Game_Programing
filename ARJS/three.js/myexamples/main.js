@@ -123,7 +123,7 @@ function animate() {
 
   if (scene.targets.length > 0) {
   	requestAnimationFrame(animate);
-    //console.log("continue?");
+    console.log(">0");
   }
   else if(scene.targets.length == 0) {
     let random_x = getRandom(-400, 800);
@@ -143,6 +143,7 @@ function animate() {
     }
     scene.targets.push (new Target (1, new THREE.Vector3 (random_x, 0, random_z)));
     requestAnimationFrame(animate);
+    console.log("==0");
   }
   /*else {
     updateScoreBoard(agentB, agentR);

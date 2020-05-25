@@ -120,12 +120,8 @@ function animate() {
   scene.obstacles.forEach ( function (obs) { obs.checkCollision (agentR)} );
 
   updateScoreBoard(agentB, agentR);
-
-  if (scene.targets.length > 0) {
-  	requestAnimationFrame(animate);
-    //console.log("continue?");
-  }
-  else if(scene.targets.length == 0) {
+  
+  if(scene.targets.length == 0) {
     let random_x = getRandom(-400, 800);
     let random_z = getRandom(-400, 800);
     var outside_obstacle = true;
@@ -142,8 +138,14 @@ function animate() {
       if(count_inside == 0) outside_obstacle = false;
     }
     scene.targets.push (new Target (1, new THREE.Vector3 (random_x, 0, random_z)));
-    requestAnimationFrame(animate);
+    //requestAnimationFrame(animate);
+    console.log("==0");
   }
+  if (scene.targets.length > 0) {
+  	requestAnimationFrame(animate);
+    console.log(">0");
+  }
+  
   /*else {
     updateScoreBoard(agentB, agentR);
     counting = false;
