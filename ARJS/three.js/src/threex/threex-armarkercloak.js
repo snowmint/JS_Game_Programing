@@ -21,7 +21,7 @@ THREEx.ArMarkerCloak = function(videoTexture){
 				value: videoTexture
 			},
                         opacity: {
-                                value: 0.5
+                                value: 1.0
                         }
 		},
 		defines: {
@@ -30,7 +30,7 @@ THREEx.ArMarkerCloak = function(videoTexture){
 	});
 
 	var cloakMesh = new THREE.Mesh( geometry, material );
-        cloakMesh.rotation.x = -Math.PI/2
+    cloakMesh.rotation.x = -Math.PI/2
 	this.object3d = cloakMesh
 
 	//////////////////////////////////////////////////////////////////////////////
@@ -76,10 +76,10 @@ THREEx.ArMarkerCloak = function(videoTexture){
 		originalsFaceVertexUvs[0][i*4+3][2].set( xMax/2+0.5, yMin/2+0.5 )
 	}
 
-        if( updateInShaderEnabled === true ){
-                cloakMesh.geometry.faceVertexUvs = originalsFaceVertexUvs
-                cloakMesh.geometry.uvsNeedUpdate = true                
-        }
+    if( updateInShaderEnabled === true ){
+            cloakMesh.geometry.faceVertexUvs = originalsFaceVertexUvs
+            cloakMesh.geometry.uvsNeedUpdate = true                
+    }
 
 	//////////////////////////////////////////////////////////////////////////////
 	//		Code Separator
@@ -92,25 +92,25 @@ THREEx.ArMarkerCloak = function(videoTexture){
 	originalOrthoVertices.push( new THREE.Vector3(xMax, yMin, 0))
 
 	// build debugMesh
-        var material = new THREE.MeshNormalMaterial({
-		transparent : true,
-		opacity: 0.5,
+    var material = new THREE.MeshNormalMaterial({
+		//transparent : true,
+		opacity: 1.0,
 		side: THREE.DoubleSide
 	});
-        var geometry = new THREE.PlaneGeometry(1,1);
-        var orthoMesh = new THREE.Mesh(geometry, material);
-	this.orthoMesh = orthoMesh
+    var geometry = new THREE.PlaneGeometry(1,1);
+    var orthoMesh = new THREE.Mesh(geometry, material);
+	this.orthoMesh = orthoMesh;
 
         //////////////////////////////////////////////////////////////////////////////
         //                Code Separator
         //////////////////////////////////////////////////////////////////////////////
 
 	this.update = function(modelViewMatrix, cameraProjectionMatrix){
-                updateOrtho(modelViewMatrix, cameraProjectionMatrix)
+      updateOrtho(modelViewMatrix, cameraProjectionMatrix)
 
-                if( updateInShaderEnabled === false ){
-                        updateUvs(modelViewMatrix, cameraProjectionMatrix)
-                }
+      if( updateInShaderEnabled === false ){
+              updateUvs(modelViewMatrix, cameraProjectionMatrix)
+      }
 	}
         
         return
@@ -118,28 +118,27 @@ THREEx.ArMarkerCloak = function(videoTexture){
         // update cloakMesh
 	function updateUvs(modelViewMatrix, cameraProjectionMatrix){
 		var transformedUv = new THREE.Vector3()
-                originalsFaceVertexUvs[0].forEach(function(faceVertexUvs, faceIndex){
-                        faceVertexUvs.forEach(function(originalUv, uvIndex){
-                                // set transformedUv - from UV coord to clip coord
-                                transformedUv.x = originalUv.x * 2.0 - 1.0;
-                                transformedUv.y = originalUv.y * 2.0 - 1.0;
-                                transformedUv.z = 0
+              originalsFaceVertexUvs[0].forEach(function(faceVertexUvs, faceIndex){
+                  faceVertexUvs.forEach(function(originalUv, uvIndex){
+                    // set transformedUv - from UV coord to clip coord
+                    transformedUv.x = originalUv.x * 2.0 - 1.0;
+                    transformedUv.y = originalUv.y * 2.0 - 1.0;
+                    transformedUv.z = 0
         			// apply modelViewMatrix and projectionMatrix
         			transformedUv.applyMatrix4( modelViewMatrix )
         			transformedUv.applyMatrix4( cameraProjectionMatrix )
         			// apply perspective
         			transformedUv.x /= transformedUv.z
         			transformedUv.y /= transformedUv.z
-                                // set back from clip coord to Uv coord
-                                transformedUv.x = transformedUv.x / 2.0 + 0.5;
-                                transformedUv.y = transformedUv.y / 2.0 + 0.5;
-                                // copy the trasnformedUv into the geometry
-                                cloakMesh.geometry.faceVertexUvs[0][faceIndex][uvIndex].set(transformedUv.x, transformedUv.y)
-                        })
-                })
-        
-                // cloakMesh.geometry.faceVertexUvs = faceVertexUvs
-                cloakMesh.geometry.uvsNeedUpdate = true
+                    // set back from clip coord to Uv coord
+                    transformedUv.x = transformedUv.x / 2.0 + 0.5;
+                    transformedUv.y = transformedUv.y / 2.0 + 0.5;
+                    // copy the trasnformedUv into the geometry
+                    cloakMesh.geometry.faceVertexUvs[0][faceIndex][uvIndex].set(transformedUv.x, transformedUv.y)
+                  })
+              })
+              // cloakMesh.geometry.faceVertexUvs = faceVertexUvs
+              cloakMesh.geometry.uvsNeedUpdate = true
         }
 
         // update orthoMesh
