@@ -152,9 +152,9 @@ function init() {
 	markerHiro = addMarkerHiro();
 	scene.add (markerHiro); 
 	
-	var light = new THREE.PointLight( 0xffffff, 1, 100 );
-    light.position.set( 5, 5, 5 );
-    scene.add( light );
+//	var light = new THREE.PointLight( 0xffffff, 1, 100 );
+//    light.position.set( 5, 5, 5 );
+//    scene.add( light );
 	
 }
 	
@@ -168,29 +168,12 @@ function addMarkerHiro(){
 		patternUrl : THREEx.ArToolkitContext.baseURL + '../data/data/patt.pattern_map_pin'
 	})
 
-	// need to add a WRAP ...
+	//////////////////////////////////////////////////////////////////////////////
+	//		add WRAP
+	//////////////////////////////////////////////////////////////////////////////
 	let myWrap = new THREE.Group();
 	markerRoot.add (myWrap);
   
-    //light
-    spotLight = new THREE.SpotLight(0x999999, 1.3);
-    spotLight.position.set(0, 30, 30);//0, 50, 100
-    spotLight.angle = Math.PI / 3;
-
-    spotLight.castShadow = true;
-
-    spotLight.shadow.mapSize.width = 512;
-    spotLight.shadow.mapSize.height = 512;
-
-    spotLight.shadow.camera.near = 0.5;//30
-    spotLight.shadow.camera.far = 300;//4000
-    spotLight.shadow.camera.fov = spotLight.angle / Math.PI * 180;
-
-    ///spotLight.exponent = 0.5;//20
-    
-    markerRoot.add(spotLight);
-    myWrap.add(spotLight);
-
 	// add a torus knot & a transparent box	
 //	var geometry	= new THREE.TorusKnotGeometry(0.3,0.1,64,16);
 //	var material	= new THREE.MeshLambertMaterial({color:'cyan'});
@@ -199,10 +182,10 @@ function addMarkerHiro(){
 //	//markerRoot.add (mesh);
 //	myWrap.add (mesh);
   
-    //background
-    var texture, material, plane;
-    //texture = THREE.ImageUtils.loadTexture( "./TTU.png" );
-    var texture;
+    //////////////////////////////////////////////////////////////////////////////
+	//		add background
+	//////////////////////////////////////////////////////////////////////////////
+    var texture, plane;
     var loader = new THREE.TextureLoader();
     loader.crossOrigin = '';
     texture = loader.load('./TTU.png');
@@ -211,15 +194,10 @@ function addMarkerHiro(){
       alphaTest: 0.5,
       side:THREE.DoubleSide
     });
-    // assuming you want the texture to repeat in both directions:
-    texture.wrapS = THREE.RepeatWrapping; 
-    texture.wrapT = THREE.RepeatWrapping;
     var pla_geometry = new THREE.PlaneGeometry( 15, 8, 32 );
-    //var pla_material = new THREE.MeshPhongMaterial( {map:texture, transparent: true} );
     var plane = new THREE.Mesh( pla_geometry, texMatpla );
     plane.position.z = -1;
     plane.position.y = 4;
-    //plane.castShadow = true;
     plane.receiveShadow = true;
     myWrap.add( plane );
 	
@@ -227,22 +205,27 @@ function addMarkerHiro(){
     //floor.receiveShadow = true;
     
   
-    //Tatung baby
+    //////////////////////////////////////////////////////////////////////////////
+	//		add Tatung baby
+	//////////////////////////////////////////////////////////////////////////////
     var texture_ttbb;
-    texture_ttbb = THREE.ImageUtils.loadTexture( "./綠色大同寶寶.png" );
-
-    // assuming you want the texture to repeat in both directions:
-    texture_ttbb.wrapS = THREE.RepeatWrapping; 
-    texture_ttbb.wrapT = THREE.RepeatWrapping;
+    loader.crossOrigin = '';
+    texture_ttbb = loader.load('./綠色大同寶寶.png');
+    var texMatpla_ttbb = new THREE.MeshPhongMaterial({
+      map: texture_ttbb,
+      alphaTest: 0.5,
+      side:THREE.DoubleSide
+    });
     var ttbb_geometry = new THREE.PlaneGeometry( 2, 3, 32 );
-    var ttbb_material = new THREE.MeshLambertMaterial( {map:texture_ttbb, transparent: true} );
-    var plane_ttbb = new THREE.Mesh( ttbb_geometry, ttbb_material );
+    var plane_ttbb = new THREE.Mesh( ttbb_geometry, texMatpla_ttbb );
     plane_ttbb.castShadow = true;
     plane_ttbb.receiveShadow = true;
-    plane_ttbb.position.z = 0.5;
+    plane_ttbb.position.z = -0.3;//0.5
     plane_ttbb.position.y = 1.3;
 
-    //shadow
+    //////////////////////////////////////////////////////////////////////////////
+	//		add Tatung baby shadow
+	//////////////////////////////////////////////////////////////////////////////
     var uniforms = {
         texture: {
             type: "t",
@@ -258,42 +241,44 @@ function addMarkerHiro(){
     });
     myWrap.add( plane_ttbb );
   
-    //me
-    var texture_me;
-    var loader_me = new THREE.TextureLoader();
-    loader_me.crossOrigin = '';
-    texture_me = loader_me.load('./畢業服.png');
-    var texMat = new THREE.MeshLambertMaterial({
-      map: texture_me,
-      alphaTest: 0.5,
-      side:THREE.DoubleSide
-    });
-    var me_geometry = new THREE.PlaneGeometry( 2, 4, 32 );
-    var plane_me = new THREE.Mesh( me_geometry, texMat );
-    plane_me.position.z = 0.5;
-    plane_me.position.x = 2;
-    plane_me.position.y = 2;
-    plane_me.castShadow = true;
-    plane_me.receiveShadow = true;
-    
-    //shadow
-    var uniforms2 = {
-        texture: {
-            type: "t",
-            value: texture_me
-        }
-      };
-    var vertexShader2 = document.getElementById('vertexShaderDepth').textContent;
-    var fragmentShader2 = document.getElementById('fragmentShaderDepth').textContent;
-    plane_me.customDepthMaterial = new THREE.ShaderMaterial({
-          uniforms: uniforms2,
-          vertexShader: vertexShader2,
-          fragmentShader: fragmentShader2
-    });
-    myWrap.add( plane_me );
+//    //////////////////////////////////////////////////////////////////////////////
+//	  //		add me
+//	  //////////////////////////////////////////////////////////////////////////////
+//    var texture_me;
+//    var loader_me = new THREE.TextureLoader();
+//    loader_me.crossOrigin = '';
+//    texture_me = loader_me.load('./畢業服.png');
+//    var texMat_me = new THREE.MeshLambertMaterial({
+//      map: texture_me,
+//      alphaTest: 0.5,
+//      side:THREE.DoubleSide
+//    });
+//    var me_geometry = new THREE.PlaneGeometry( 2, 4, 32 );
+//    var plane_me = new THREE.Mesh( me_geometry, texMat_me );
+//    plane_me.position.z = 0.5;
+//    plane_me.position.x = 2;
+//    plane_me.position.y = 2;
+//    plane_me.castShadow = true;
+//    plane_me.receiveShadow = true;
+//    //////////////////////////////////////////////////////////////////////////////
+//    //		add me shadow
+//    //////////////////////////////////////////////////////////////////////////////
+//    var uniforms2 = {
+//        texture: {
+//            type: "t",
+//            value: texture_me
+//        }
+//      };
+//    var vertexShader2 = document.getElementById('vertexShaderDepth').textContent;
+//    var fragmentShader2 = document.getElementById('fragmentShaderDepth').textContent;
+//    plane_me.customDepthMaterial = new THREE.ShaderMaterial({
+//          uniforms: uniforms2,
+//          vertexShader: vertexShader2,
+//          fragmentShader: fragmentShader2
+//    });
+//    myWrap.add( plane_me );
   
-    spotLight.target = plane_me;
-    spotLight.target = plane_ttbb;
+    
     //////////////////////////////////////////////////////////////////////////////////
 	//		build videoTexture
 	//////////////////////////////////////////////////////////////////////////////////
@@ -316,20 +301,42 @@ function addMarkerHiro(){
 	markerRoot.add(markerCloak.object3d)
     
     //////////////////////////////////////////////////////////////////////////////
+	//		add light
+	//////////////////////////////////////////////////////////////////////////////
+    spotLight = new THREE.SpotLight(0xAAAAAA, 1.3);
+    spotLight.position.set(0, 30, 30);//0, 50, 100
+    spotLight.angle = Math.PI / 3;
+
+    spotLight.castShadow = true;
+
+    spotLight.shadow.mapSize.width = 512;
+    spotLight.shadow.mapSize.height = 512;
+
+    spotLight.shadow.camera.near = 0.5;//30
+    spotLight.shadow.camera.far = 300;//4000
+    spotLight.shadow.camera.fov = spotLight.angle / Math.PI * 180;
+    
+    //spotLight.target = plane_me;
+    spotLight.exponent = 20;
+    spotLight.target = plane_ttbb;
+
+    myWrap.add(spotLight);
   
-    // SpriteText
+    //////////////////////////////////////////////////////////////////////////////
+	//		add SpriteText
+	//////////////////////////////////////////////////////////////////////////////
     var SpriteText2D = THREE_Text.SpriteText2D;
     var textAlign = THREE_Text.textAlign;
 
     sprite = new SpriteText2D("TEST", {
-      align: textAlign.center,
-      font: '40px Times New Roman',
-      fillStyle: '#7bb7e3',
-      antialias: true,
-      shadowColor: 'rgba(0, 0, 0, 0.2)',
-      shadowBlur: 3,
-      shadowOffsetX: 2,
-      shadowOffsetY: 2
+        align: textAlign.center,
+        font: '40px Times New Roman',
+        fillStyle: '#7bb7e3',
+        antialias: true,
+        shadowColor: 'rgba(0, 0, 0, 0.2)',
+        shadowBlur: 3,
+        shadowOffsetX: 2,
+        shadowOffsetY: 2
     });
     sprite.position.set(0, 0, 0);
     sprite.scale.set(.015, .015, .015);
@@ -341,18 +348,23 @@ function addMarkerHiro(){
 	//markerRoot.position.set (0.5, 0, -0.3) // this WONT work ...
 	
     var material_sha = new THREE.ShadowMaterial();
-    //var material = new THREE.MeshLambertMaterial({color:0xffff00, side:THREE.DoubleSide});
     material_sha.opacity = 0.7; //! bug in threejs. can't set in constructor
-    var geometry_shap = new THREE.PlaneGeometry(3, 3) // should be large enough
+    var geometry_shap = new THREE.PlaneGeometry(100, 100) // should be large enough
     var planeMesh = new THREE.Mesh( geometry_shap, material_sha);
     planeMesh.receiveShadow = true;
     planeMesh.depthWrite = false;
     planeMesh.rotation.x = -Math.PI/2;
-    markerRoot.add(planeMesh);
+    myWrap.add(planeMesh);
   
+    /*var geometry_tor	= new THREE.TorusKnotGeometry(0.3,0.1,64,16); 
+    var material_tor	= new THREE.MeshLambertMaterial();
+    var mesh_tor	= new THREE.Mesh( geometry_tor, material_tor );
+    mesh_tor.castShadow = true;
+    mesh_tor.receiveShadow = true;
+    mesh_tor.position.y	= 0.7
+    myWrap.add( mesh_tor );*/
     
-    
-    //myWrap.add ( new THREE.CameraHelper (spotLight.shadow.camera) );
+    myWrap.add ( new THREE.CameraHelper (spotLight.shadow.camera) );
     
 	return markerRoot;
 }	
