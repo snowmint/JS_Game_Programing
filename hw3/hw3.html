@@ -1,12 +1,16 @@
 <head>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/108/three.min.js"></script>
-    <script src="https://threejs.org/examples/js/controls/OrbitControls.js"></script>
-    <script src="https://jyunming-chen.github.io/tutsplus/js/KeyboardState.js"></script>
-    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/dat-gui/0.5/dat.gui.min.js"></script>
-    <script src="https://raw.githack.com/mrdoob/three.js/dev/examples/js/misc/Gyroscope.js"></script>
-    
-    <style>
+  <!--script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/108/three.min.js"></script>
+    <script src="https://threejs.org/examples/js/controls/OrbitControls.js"></script-->
+  <script src="../three.js/build/three.min.js"></script>
+  <script src="../three.js/examples/js/loaders/MTLLoader.js"></script>
+  <script src="../three.js/examples/js/loaders/OBJLoader.js"></script>
+  <script src="../three.js/examples/js/controls/OrbitControls.js"></script>
+  <script src="https://jyunming-chen.github.io/tutsplus/js/KeyboardState.js"></script>
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/dat-gui/0.5/dat.gui.min.js"></script>
+  <script src="https://raw.githack.com/mrdoob/three.js/dev/examples/js/misc/Gyroscope.js"></script>
+
+  <style>
     #info {
       position: absolute;
       bottom: 5px;
@@ -20,7 +24,7 @@
       position: absolute;
       top: 0px;
       width: 100%;
-      padding: 10px;
+      padding: 0px;
       text-align: center;
       color: #ffffff
     }
@@ -48,13 +52,14 @@
       border: 1px solid #96B9F2;
       background-color: Transparent;
       color: white;
-      box-shadow: 0 5px 20px 0 rgba( 0, 0, 0, 0.54), 0 17px 50px 0 rgba(0, 0, 0, 0.19);
+      box-shadow: 0 5px 20px 0 rgba(0, 0, 0, 0.54), 0 17px 50px 0 rgba(0, 0, 0, 0.19);
     }
 
-    </style>
+  </style>
 </head>
+
 <body>
-   <!--script src="https://cdn.jsdelivr.net/npm/bubbly-bg@1.0.0/dist/bubbly-bg.js"></script>
+  <!--script src="https://cdn.jsdelivr.net/npm/bubbly-bg@1.0.0/dist/bubbly-bg.js"></script>
     <script>
     bubbly({
       blur:15,
@@ -81,417 +86,422 @@
     <br><br>
   </div><br>
   <audio id="soundtrack" autoplay loop style="display:none">
-  <source src="Pink Panther Walk Cycle 2.mp3" type='audio/mp3'>
+    <source src="Pink Panther Walk Cycle 2.mp3" type='audio/mp3'>
   </audio>
 </body>
 <script>
-$('#play').click(function() {
-  isPaused = !isPaused;
-  if (isPaused) {
-    $('#play').text('Play')
-    soundTrack.pause()
-  } else {
-    $('#play').text('Pause')
-    soundTrack.play()
+  $('#play').click(function() {
+    isPaused = !isPaused;
+    if (isPaused) {
+      $('#play').text('Play')
+      soundTrack.pause()
+    } else {
+      $('#play').text('Pause')
+      soundTrack.play()
+    }
+  });
+
+  function toggle() {
+    isDimming = !isDimming;
+    sign = isDimming ? -1 : 1;
+    console.log(isDimming);
   }
-});
 
-function toggle() {
-  isDimming = !isDimming;
-  sign = isDimming ? -1 : 1;
-  console.log(isDimming);
-}
+  //about sound
+  var collisionSound, collisionSoundWall, soundTrack;
+  var isDimming = false,
+    soundVal = 1.0,
+    sign = 1.0;
+  var isPaused = false;
+  //about sound end
+  var camera, scene, renderer, controls, controls1, camera1;
+  var keyboard = new KeyboardState();
+  var theta = 0;
+  var parts;
+  var high = 17;
+  var gcontrols; // for dat-gui
+  var speed = 7;
+  var intI = speed;
+  var angle = 0;
+  var gyro;
+  var useGyro = true;
+  var print, opacity = 1.0;
+  var footprints = [],
+    footprintmeshs = [];
+  var clock_footprint;
+  var footprint_num = 0;
 
-//about sound
-var collisionSound, collisionSoundWall, soundTrack;
-var isDimming = false,
-  soundVal = 1.0,
-  sign = 1.0;
-var isPaused = false;
-//about sound end
-var camera, scene, renderer, controls, controls1,camera1;
-var keyboard = new KeyboardState();
-var theta = 0;
-var parts;
-var high = 17;
-var gcontrols; // for dat-gui
-var speed = 7;
-var intI = speed;
-var angle = 0;
-var gyro;
-var useGyro = true;
-var print, opacity = 1.0;
-var footprints = [], footprintmeshs = [];
-var clock_footprint;
-var footprint_num = 0;
+  $('#switch').click(function() {
+    useGyro = !useGyro;
+    if (useGyro) $('#switch').text('using Gyro')
+    else $('#switch').text('using normal')
+  })
 
-$('#switch').click ( function () {
-	useGyro = !useGyro;
-  if (useGyro) $('#switch').text ('using Gyro')
-  else $('#switch').text ('using normal')
-})
-  
-function remove(name) {
+  function remove(name) {
     var o = scene.getObjectByName(name);
     scene.remove(o);
     //console.log("delete" + name);
-}
-  
-class CFootprint {
-    constructor(mesh) {//, pos, name
-        this.alive = 1;
-        this.angle = 1;
-        this.toggle = 1;
-        this.mesh = mesh;
-        //this.mesh.opacity = 1.0;
-        //this.mesh.transparent = true;
-        //this.material.opacity = 1.0;
-        //this.mesh.materials[0].transparent = true;
-        footprintmeshs.push(this.mesh);
-        //console.log(this.mesh.name + " been create");
-        scene.add (this.mesh);
-        //console.log(this.mesh);
+  }
+
+  class CFootprint {
+    constructor(mesh) { //, pos, name
+      this.alive = 1;
+      this.angle = 1;
+      this.toggle = 1;
+      this.mesh = mesh;
+      //this.mesh.opacity = 1.0;
+      //this.mesh.transparent = true;
+      //this.material.opacity = 1.0;
+      //this.mesh.materials[0].transparent = true;
+      footprintmeshs.push(this.mesh);
+      //console.log(this.mesh.name + " been create");
+      scene.add(this.mesh);
+      //console.log(this.mesh);
     }
     update() {
-        if(this.toggle == 1) this.angle += 0.01;
-        //this.mesh.opacity -= 0.001;
-        //console.log(this.mesh.opacity);
-        this.mesh.material.opacity -= 0.0002;
-        //this.mesh.opacity = Math.abs(Math.sin(3*this.angle));
-        if(this.angle >= 35.1 && this.alive == 1) {
-            for( var i = 0; i < footprints.length; i++){ 
-               if ( footprints[i].mesh.name === this.mesh.name) {
-                 footprints.splice(i, 1); 
-               }
-            }
-            for( var j = 0; j < footprintmeshs.length; j++){ 
-               if ( footprintmeshs[j].name === this.mesh.name) {
-                 footprintmeshs.splice(j, 1); 
-               }
-            }
-            this.alive = 0;
-            remove(this.mesh.name);
+      if (this.toggle == 1) this.angle += 0.01;
+      //this.mesh.opacity -= 0.001;
+      //console.log(this.mesh.opacity);
+      this.mesh.material.opacity -= 0.0002;
+      //this.mesh.opacity = Math.abs(Math.sin(3*this.angle));
+      if (this.angle >= 35.1 && this.alive == 1) {
+        for (var i = 0; i < footprints.length; i++) {
+          if (footprints[i].mesh.name === this.mesh.name) {
+            footprints.splice(i, 1);
+          }
         }
+        for (var j = 0; j < footprintmeshs.length; j++) {
+          if (footprintmeshs[j].name === this.mesh.name) {
+            footprintmeshs.splice(j, 1);
+          }
+        }
+        this.alive = 0;
+        remove(this.mesh.name);
+      }
     }
-}
-init();
-animate();
+  }
+  init();
+  animate();
 
-function loadCubemap() {
+  function loadCubemap() {
     var path = "./skyHD/";
     var format = ".png";
     var urls = [
-            path + 'posx' + format, path + 'negx' + format,
-            path + 'posy' + format, path + 'negy' + format,
-            path + 'posz' + format, path + 'negz' + format
-        ];
+      path + 'posx' + format, path + 'negx' + format,
+      path + 'posy' + format, path + 'negy' + format,
+      path + 'posz' + format, path + 'negz' + format
+    ];
     var loadercube = new THREE.CubeTextureLoader();
-    loadercube.setCrossOrigin ('');
+    loadercube.setCrossOrigin('');
     var cubeMap = loadercube.load(urls);
     var cubeMap = loadercube.load(urls);
     cubeMap.format = THREE.RGBFormat;
     //console.log(cubeMap.image);
     return cubeMap;
-}
+  }
 
-function init() {
-  clock_footprint = new THREE.Clock();
-  soundTrack = document.getElementById('soundtrack');
-  soundTrack.volume = 0.7;
+  function init() {
+    clock_footprint = new THREE.Clock();
+    soundTrack = document.getElementById('soundtrack');
+    soundTrack.volume = 0.7;
 
-  scene = new THREE.Scene();
-  
-  var cubeMap = loadCubemap();
-  scene.background = cubeMap;
+    scene = new THREE.Scene();
 
-  camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 1, 10000);
-  camera.position.y = 40;
-  camera.position.z = 120;
-  scene.add(camera);
+    var cubeMap = loadCubemap();
+    scene.background = cubeMap;
 
-  camera1 = new THREE.PerspectiveCamera(80, window.innerWidth / window.innerHeight, 1, 10000);
-  camera1.position.z = 120;
-  scene.add(camera1);
-    
-  light = new THREE.PointLight(0x474747);
-  light.position.set(0, 50, 0);
-  scene.add(light);
-  let AbLight = new THREE.AmbientLight(0xbbbbbb); // soft white light
-  AbLight.position.set(0, 100, 0);
-  scene.add(AbLight);
+    camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 1, 10000);
+    camera.position.y = 40;
+    camera.position.z = 120;
+    scene.add(camera);
 
-  //var gridXZ = new THREE.GridHelper(200, 20, 'red', 'white');
-  //scene.add(gridXZ);
+    camera1 = new THREE.PerspectiveCamera(80, window.innerWidth / window.innerHeight, 1, 10000);
+    camera1.position.z = 120;
+    scene.add(camera1);
 
-  renderer = new THREE.WebGLRenderer();
-  renderer = new THREE.WebGLRenderer({
-    alpha: true
-  });
-  renderer.setSize(window.innerWidth, window.innerHeight);
+    light = new THREE.PointLight(0x474747);
+    light.position.set(0, 50, 0);
+    scene.add(light);
+    let AbLight = new THREE.AmbientLight(0xbbbbbb); // soft white light
+    AbLight.position.set(0, 100, 0);
+    scene.add(AbLight);
+
+    //var gridXZ = new THREE.GridHelper(200, 20, 'red', 'white');
+    //scene.add(gridXZ);
+
+    renderer = new THREE.WebGLRenderer();
+    renderer = new THREE.WebGLRenderer({
+      alpha: true
+    });
+    renderer.setSize(window.innerWidth, window.innerHeight);
 
 
-  controls = new THREE.OrbitControls(camera, renderer.domElement);
-  controls.enableDamping = true; // an animation loop is required when either damping or auto-rotation are enabled
-  controls.dampingFactor = 0.05;
-  controls.screenSpacePanning = false;
-  controls.minDistance = 10;
-  controls.maxDistance = 600;
-  controls.maxPolarAngle = (Math.PI-0.1) / 2;
-  
-  controls1 = new THREE.OrbitControls(camera1, renderer.domElement);
-  controls1.enableDamping = true; // an animation loop is required when either damping or auto-rotation are enabled
-  controls1.dampingFactor = 0.05;
-  controls1.screenSpacePanning = false;
-  controls1.minDistance = 10;
-  controls1.maxDistance = 600;
-  controls1.maxPolarAngle = (Math.PI-0.1) / 2;
+    controls = new THREE.OrbitControls(camera, renderer.domElement);
+    controls.enableDamping = true; // an animation loop is required when either damping or auto-rotation are enabled
+    controls.dampingFactor = 0.05;
+    controls.screenSpacePanning = false;
+    controls.minDistance = 10;
+    controls.maxDistance = 600;
+    controls.maxPolarAngle = (Math.PI - 0.1) / 2;
 
-  document.body.appendChild(renderer.domElement);
-  window.addEventListener('resize', onWindowResize, true);
-  //////// floor
-  let map =  new THREE.TextureLoader().load("./floor_texture.jpg");
-  map.repeat.set(100, 100);
-  map.wrapS = THREE.RepeatWrapping;
-  map.wrapT = THREE.RepeatWrapping;
-  let planeGeo = new THREE.PlaneGeometry(10000,10000);
-  planeGeo.faceVertexUvs[1] = planeGeo.faceVertexUvs[0];
-  let planeMat = new THREE.MeshBasicMaterial({color:0xffffff, side:THREE.DoubleSide, map:map});
-  let plane = new THREE.Mesh(planeGeo,planeMat);
-  plane.rotation.x = -Math.PI / 2;
-  plane.position.y = 0;
-  scene.add(plane);
-  
-  ////////////////////////////////////////////////////////////////////////
-  parts = buildPart()
-  gyro = new THREE.Gyroscope();
-  scene.add (gyro)
-  gyro.add (camera1)
-  parts[0].add (gyro)
+    controls1 = new THREE.OrbitControls(camera1, renderer.domElement);
+    controls1.enableDamping = true; // an animation loop is required when either damping or auto-rotation are enabled
+    controls1.dampingFactor = 0.05;
+    controls1.screenSpacePanning = false;
+    controls1.minDistance = 10;
+    controls1.maxDistance = 600;
+    controls1.maxPolarAngle = (Math.PI - 0.1) / 2;
 
-  scene.add(parts[0])
-  parts[0].add(parts[1])
+    document.body.appendChild(renderer.domElement);
+    window.addEventListener('resize', onWindowResize, true);
+    //////// floor
+    let map = new THREE.TextureLoader().load("./floor_texture.jpg");
+    map.repeat.set(100, 100);
+    map.wrapS = THREE.RepeatWrapping;
+    map.wrapT = THREE.RepeatWrapping;
+    let planeGeo = new THREE.PlaneGeometry(10000, 10000);
+    //planeGeo.faceVertexUvs[1] = planeGeo.faceVertexUvs[0];
+    let planeMat = new THREE.MeshBasicMaterial({
+      color: 0xffffff,
+      side: THREE.DoubleSide,
+      map: map
+    });
+    let plane = new THREE.Mesh(planeGeo, planeMat);
+    plane.rotation.x = -Math.PI / 2;
+    plane.position.y = 0;
+    scene.add(plane);
 
-  parts[1].position.set(3.5, 14, 0)
-  parts[1].rotation.z = -Math.PI / 2
-  parts[1].rotation.z += 0.5
-  parts[1].rotation.order = 'ZYX'
+    ////////////////////////////////////////////////////////////////////////
+    parts = buildPart()
+    gyro = new THREE.Gyroscope();
+    scene.add(gyro)
+    gyro.add(camera1)
+    parts[0].add(gyro)
 
-  parts[0].add(parts[2])
+    scene.add(parts[0])
+    parts[0].add(parts[1])
 
-  parts[2].position.set(-3.5, 14, 0)
-  parts[2].rotation.z = -Math.PI / 2
-  parts[2].rotation.z -= 0.5
-  parts[2].rotation.order = 'ZYX'
+    parts[1].position.set(3.5, 14, 0)
+    parts[1].rotation.z = -Math.PI / 2
+    parts[1].rotation.z += 0.5
+    parts[1].rotation.order = 'ZYX'
 
-  parts[1].add(parts[3])
-  parts[3].position.set(6, 0, 0)
-  parts[3].rotation.order = 'ZYX'
+    parts[0].add(parts[2])
 
-  parts[2].add(parts[4])
-  parts[4].position.set(6, 0, 0)
-  parts[4].rotation.order = 'ZYX'
+    parts[2].position.set(-3.5, 14, 0)
+    parts[2].rotation.z = -Math.PI / 2
+    parts[2].rotation.z -= 0.5
+    parts[2].rotation.order = 'ZYX'
 
-  parts[0].add(parts[5])
+    parts[1].add(parts[3])
+    parts[3].position.set(6, 0, 0)
+    parts[3].rotation.order = 'ZYX'
 
-  parts[5].position.set(2.5, 0, 0)
-  parts[5].rotation.z = -Math.PI / 2
-  parts[5].rotation.order = 'ZYX'
+    parts[2].add(parts[4])
+    parts[4].position.set(6, 0, 0)
+    parts[4].rotation.order = 'ZYX'
 
-  parts[0].add(parts[6])
+    parts[0].add(parts[5])
 
-  parts[6].position.set(-2.5, 0, 0)
-  parts[6].rotation.z = -Math.PI / 2
-  parts[6].rotation.order = 'ZYX'
+    parts[5].position.set(2.5, 0, 0)
+    parts[5].rotation.z = -Math.PI / 2
+    parts[5].rotation.order = 'ZYX'
 
-  parts[5].add(parts[7])
-  parts[7].position.set(6, 0, 0)
-  parts[7].rotation.order = 'ZYX'
+    parts[0].add(parts[6])
 
-  parts[6].add(parts[8])
-  parts[8].position.set(6, 0, 0)
-  parts[8].rotation.order = 'ZYX'
+    parts[6].position.set(-2.5, 0, 0)
+    parts[6].rotation.z = -Math.PI / 2
+    parts[6].rotation.order = 'ZYX'
 
-  ///////////////////////////////
-  gcontrol = { //new function()
-    P_high: 0.01,
-    P_X: 0.01,
-    P_Z: 0.01,
-    body_x: 0.01,
-    body_y: 0.01,
-    body_z: 0.01,
-    leftUpArm_x: 0.01,
-    leftUpArm_y: 0.01,
-    leftUpArm_z: 0.01,
-    leftArm_x: 0.01,
-    leftArm_y: 0.01,
-    leftArm_z: 0.01,
-    rightUpArm_x: 0.01,
-    rightUpArm_y: 0.01,
-    rightUpArm_z: 0.01,
-    rightArm_x: 0.01,
-    rightArm_y: 0.01,
-    rightArm_z: 0.01,
-    leftUpLeg_x: 0.01,
-    leftUpLeg_y: 0.01,
-    leftUpLeg_z: 0.01,
-    leftLeg_x: 0.01,
-    leftLeg_y: 0.01,
-    leftLeg_z: 0.01,
-    rightUpLeg_x: 0.01,
-    rightUpLeg_y: 0.01,
-    rightUpLeg_z: 0.01,
-    rightLeg_x: 0.01,
-    rightLeg_y: 0.01,
-    rightLeg_z: 0.01,
-    /*
-    this.body_x = 0.01;
-    this.body_y = 0.01;
-    this.body_z = 0.01;
-    this.leftUpArm_x = 0.01;
-    this.leftUpArm_y = 0.01;
-    this.leftUpArm_z = 0.01;
-    this.leftArm_x = 0.01;
-    this.leftArm_y = 0.01;
-    this.leftArm_z = 0.01;
-    this.rightUpArm_x = 0.01;
-    this.rightUpArm_y = 0.01;
-    this.rightUpArm_z = 0.01;
-    this.rightArm_x = 0.01;
-    this.rightArm_y = 0.01;
-    this.rightArm_z = 0.01;
-    this.leftUpLeg_x = 0.01;
-    this.leftUpLeg_y = 0.01;
-    this.leftUpLeg_z = 0.01;
-    this.leftLeg_x = 0.01;
-    this.leftLeg_y = 0.01;
-    this.leftLeg_z = 0.01;
-    this.rightUpLeg_x = 0.01;
-    this.rightUpLeg_y = 0.01;
-    this.rightUpLeg_z = 0.01;
-    this.rightLeg_x = 0.01;
-    this.rightLeg_y = 0.01;
-    this.rightLeg_z = 0.0;*/
-  };
+    parts[5].add(parts[7])
+    parts[7].position.set(6, 0, 0)
+    parts[7].rotation.order = 'ZYX'
 
-  Gmovements = {
-    body_x: 0.01,
-    body_y: 0.01,
-    body_z: 0.01,
-    leftUpArm_x: 0.01,
-    leftUpArm_y: 0.01,
-    leftUpArm_z: 0.01,
-    leftArm_x: 0.01,
-    leftArm_y: 0.01,
-    leftArm_z: 0.01,
-    rightUpArm_x: 0.01,
-    rightUpArm_y: 0.01,
-    rightUpArm_z: 0.01,
-    rightArm_x: 0.01,
-    rightArm_y: 0.01,
-    rightArm_z: 0.01,
-    leftUpLeg_x: 0.01,
-    leftUpLeg_y: 0.01,
-    leftUpLeg_z: 0.01,
-    leftLeg_x: 0.01,
-    leftLeg_y: 0.01,
-    leftLeg_z: 0.01,
-    rightUpLeg_x: 0.01,
-    rightUpLeg_y: 0.01,
-    rightUpLeg_z: 0.01,
-    rightLeg_x: 0.01,
-    rightLeg_y: 0.01,
-    rightLeg_z: 0.01,
-  };
+    parts[6].add(parts[8])
+    parts[8].position.set(6, 0, 0)
+    parts[8].rotation.order = 'ZYX'
 
-  var gui = new dat.GUI({
-    load: loadJSON(),
-    preset: 'key1'
-  });
-  gui.domElement.id = 'gui';
-  gui.remember(gcontrol);
+    ///////////////////////////////
+    gcontrol = { //new function()
+      P_high: 0.01,
+      P_X: 0.01,
+      P_Z: 0.01,
+      body_x: 0.01,
+      body_y: 0.01,
+      body_z: 0.01,
+      leftUpArm_x: 0.01,
+      leftUpArm_y: 0.01,
+      leftUpArm_z: 0.01,
+      leftArm_x: 0.01,
+      leftArm_y: 0.01,
+      leftArm_z: 0.01,
+      rightUpArm_x: 0.01,
+      rightUpArm_y: 0.01,
+      rightUpArm_z: 0.01,
+      rightArm_x: 0.01,
+      rightArm_y: 0.01,
+      rightArm_z: 0.01,
+      leftUpLeg_x: 0.01,
+      leftUpLeg_y: 0.01,
+      leftUpLeg_z: 0.01,
+      leftLeg_x: 0.01,
+      leftLeg_y: 0.01,
+      leftLeg_z: 0.01,
+      rightUpLeg_x: 0.01,
+      rightUpLeg_y: 0.01,
+      rightUpLeg_z: 0.01,
+      rightLeg_x: 0.01,
+      rightLeg_y: 0.01,
+      rightLeg_z: 0.01,
+      /*
+      this.body_x = 0.01;
+      this.body_y = 0.01;
+      this.body_z = 0.01;
+      this.leftUpArm_x = 0.01;
+      this.leftUpArm_y = 0.01;
+      this.leftUpArm_z = 0.01;
+      this.leftArm_x = 0.01;
+      this.leftArm_y = 0.01;
+      this.leftArm_z = 0.01;
+      this.rightUpArm_x = 0.01;
+      this.rightUpArm_y = 0.01;
+      this.rightUpArm_z = 0.01;
+      this.rightArm_x = 0.01;
+      this.rightArm_y = 0.01;
+      this.rightArm_z = 0.01;
+      this.leftUpLeg_x = 0.01;
+      this.leftUpLeg_y = 0.01;
+      this.leftUpLeg_z = 0.01;
+      this.leftLeg_x = 0.01;
+      this.leftLeg_y = 0.01;
+      this.leftLeg_z = 0.01;
+      this.rightUpLeg_x = 0.01;
+      this.rightUpLeg_y = 0.01;
+      this.rightUpLeg_z = 0.01;
+      this.rightLeg_x = 0.01;
+      this.rightLeg_y = 0.01;
+      this.rightLeg_z = 0.0;*/
+    };
 
-  var people_pos = gui.addFolder('people');
-  people_pos.add(gcontrol, 'P_high', 0.01, 30);
-  people_pos.add(gcontrol, 'P_X', -60.0, 60.0);
-  people_pos.add(gcontrol, 'P_Z', -60.0, 60.0);
-  var body_pos = gui.addFolder('body');
-  body_pos.add(gcontrol, 'body_x', 0.01, 6.25);
-  body_pos.add(gcontrol, 'body_y', 0.01, 6.25);
-  body_pos.add(gcontrol, 'body_z', 0.01, 6.25);
-  var leftArm_pos = gui.addFolder('leftArm');
-  leftArm_pos.add(gcontrol, 'leftUpArm_x', 0.01, 6.25);
-  leftArm_pos.add(gcontrol, 'leftUpArm_y', 0.01, 6.25);
-  leftArm_pos.add(gcontrol, 'leftUpArm_z', 0.01, 6.25);
-  leftArm_pos.add(gcontrol, 'leftArm_x', 0.01, 6.25);
-  leftArm_pos.add(gcontrol, 'leftArm_y', 0.01, 6.25);
-  leftArm_pos.add(gcontrol, 'leftArm_z', 0.01, 6.25);
-  var rightArm_pos = gui.addFolder('rightArm');
-  rightArm_pos.add(gcontrol, 'rightUpArm_x', 0.01, 6.25);
-  rightArm_pos.add(gcontrol, 'rightUpArm_y', 0.01, 6.25);
-  rightArm_pos.add(gcontrol, 'rightUpArm_z', 0.01, 6.25);
-  rightArm_pos.add(gcontrol, 'rightArm_x', 0.01, 6.25);
-  rightArm_pos.add(gcontrol, 'rightArm_y', 0.01, 6.25);
-  rightArm_pos.add(gcontrol, 'rightArm_z', 0.01, 6.25);
-  var leftLeg_pos = gui.addFolder('leftLeg');
-  leftLeg_pos.add(gcontrol, 'leftUpLeg_x', 0.01, 6.25);
-  leftLeg_pos.add(gcontrol, 'leftUpLeg_y', 0.01, 6.25);
-  leftLeg_pos.add(gcontrol, 'leftUpLeg_z', 0.01, 6.25);
-  leftLeg_pos.add(gcontrol, 'leftLeg_x', 0.01, 6.25);
-  leftLeg_pos.add(gcontrol, 'leftLeg_y', 0.01, 6.25);
-  leftLeg_pos.add(gcontrol, 'leftLeg_z', 0.01, 6.25);
-  var rightLeg_pos = gui.addFolder('rightLeg');
-  rightLeg_pos.add(gcontrol, 'rightUpLeg_x', 0.01, 6.25);
-  rightLeg_pos.add(gcontrol, 'rightUpLeg_y', 0.01, 6.25);
-  rightLeg_pos.add(gcontrol, 'rightUpLeg_z', 0.01, 6.25);
-  rightLeg_pos.add(gcontrol, 'rightLeg_x', 0.01, 6.25);
-  rightLeg_pos.add(gcontrol, 'rightLeg_y', 0.01, 6.25);
-  rightLeg_pos.add(gcontrol, 'rightLeg_z', 0.01, 6.25);
+    Gmovements = {
+      body_x: 0.01,
+      body_y: 0.01,
+      body_z: 0.01,
+      leftUpArm_x: 0.01,
+      leftUpArm_y: 0.01,
+      leftUpArm_z: 0.01,
+      leftArm_x: 0.01,
+      leftArm_y: 0.01,
+      leftArm_z: 0.01,
+      rightUpArm_x: 0.01,
+      rightUpArm_y: 0.01,
+      rightUpArm_z: 0.01,
+      rightArm_x: 0.01,
+      rightArm_y: 0.01,
+      rightArm_z: 0.01,
+      leftUpLeg_x: 0.01,
+      leftUpLeg_y: 0.01,
+      leftUpLeg_z: 0.01,
+      leftLeg_x: 0.01,
+      leftLeg_y: 0.01,
+      leftLeg_z: 0.01,
+      rightUpLeg_x: 0.01,
+      rightUpLeg_y: 0.01,
+      rightUpLeg_z: 0.01,
+      rightLeg_x: 0.01,
+      rightLeg_y: 0.01,
+      rightLeg_z: 0.01,
+    };
 
-  /////////////////////////////////////
-}
+    var gui = new dat.GUI({
+      load: loadJSON(),
+      preset: 'key1'
+    });
+    gui.domElement.id = 'gui';
+    gui.remember(gcontrol);
 
-function loadJSON() {
-  return {
-    "preset": "key1",
-    "remembered": {
+    var people_pos = gui.addFolder('people');
+    people_pos.add(gcontrol, 'P_high', 0.01, 30);
+    people_pos.add(gcontrol, 'P_X', -60.0, 60.0);
+    people_pos.add(gcontrol, 'P_Z', -60.0, 60.0);
+    var body_pos = gui.addFolder('body');
+    body_pos.add(gcontrol, 'body_x', 0.01, 6.25);
+    body_pos.add(gcontrol, 'body_y', 0.01, 6.25);
+    body_pos.add(gcontrol, 'body_z', 0.01, 6.25);
+    var leftArm_pos = gui.addFolder('leftArm');
+    leftArm_pos.add(gcontrol, 'leftUpArm_x', 0.01, 6.25);
+    leftArm_pos.add(gcontrol, 'leftUpArm_y', 0.01, 6.25);
+    leftArm_pos.add(gcontrol, 'leftUpArm_z', 0.01, 6.25);
+    leftArm_pos.add(gcontrol, 'leftArm_x', 0.01, 6.25);
+    leftArm_pos.add(gcontrol, 'leftArm_y', 0.01, 6.25);
+    leftArm_pos.add(gcontrol, 'leftArm_z', 0.01, 6.25);
+    var rightArm_pos = gui.addFolder('rightArm');
+    rightArm_pos.add(gcontrol, 'rightUpArm_x', 0.01, 6.25);
+    rightArm_pos.add(gcontrol, 'rightUpArm_y', 0.01, 6.25);
+    rightArm_pos.add(gcontrol, 'rightUpArm_z', 0.01, 6.25);
+    rightArm_pos.add(gcontrol, 'rightArm_x', 0.01, 6.25);
+    rightArm_pos.add(gcontrol, 'rightArm_y', 0.01, 6.25);
+    rightArm_pos.add(gcontrol, 'rightArm_z', 0.01, 6.25);
+    var leftLeg_pos = gui.addFolder('leftLeg');
+    leftLeg_pos.add(gcontrol, 'leftUpLeg_x', 0.01, 6.25);
+    leftLeg_pos.add(gcontrol, 'leftUpLeg_y', 0.01, 6.25);
+    leftLeg_pos.add(gcontrol, 'leftUpLeg_z', 0.01, 6.25);
+    leftLeg_pos.add(gcontrol, 'leftLeg_x', 0.01, 6.25);
+    leftLeg_pos.add(gcontrol, 'leftLeg_y', 0.01, 6.25);
+    leftLeg_pos.add(gcontrol, 'leftLeg_z', 0.01, 6.25);
+    var rightLeg_pos = gui.addFolder('rightLeg');
+    rightLeg_pos.add(gcontrol, 'rightUpLeg_x', 0.01, 6.25);
+    rightLeg_pos.add(gcontrol, 'rightUpLeg_y', 0.01, 6.25);
+    rightLeg_pos.add(gcontrol, 'rightUpLeg_z', 0.01, 6.25);
+    rightLeg_pos.add(gcontrol, 'rightLeg_x', 0.01, 6.25);
+    rightLeg_pos.add(gcontrol, 'rightLeg_y', 0.01, 6.25);
+    rightLeg_pos.add(gcontrol, 'rightLeg_z', 0.01, 6.25);
+
+    /////////////////////////////////////
+  }
+
+  function loadJSON() {
+    return {
+      "preset": "key1",
+      "remembered": {
         "key1": {
-        "0": {
-          "P_high": 17,
-          "P_X": 0.0,//0
-          "P_Z": 0.0,
-          "body_x": 0.01,
-          "body_y": 4.8,
-          "body_z": 0.01,
-          "leftUpArm_x": 3.38,
-          "leftUpArm_y": 6.25,
-          "leftUpArm_z": 5.1,
-          "leftArm_x": 0.01,
-          "leftArm_y": 0.572,
-          "leftArm_z": 0.0,
-          "rightUpArm_x": 3.314,
-          "rightUpArm_y": 0.01,
-          "rightUpArm_z": 4.2,
-          "rightArm_x": 0.01,
-          "rightArm_y": 0.7,
-          "rightArm_z": 6.3,
-          "leftUpLeg_x": 0.01,
-          "leftUpLeg_y": 0.01,
-          "leftUpLeg_z": 4.8,
-          "leftLeg_x": 0.01,
-          "leftLeg_y": 0.01,
-          "leftLeg_z": 6.3,
-          "rightUpLeg_x": 0.1,
-          "rightUpLeg_y": 0.01,
-          "rightUpLeg_z": 4.7,
-          "rightLeg_x": 0.04,
-          "rightLeg_y": 0.04,
-          "rightLeg_z": 6.3
-        }
-      },
-      "key2": {
           "0": {
             "P_high": 17,
-            "P_X": 0,//0
+            "P_X": 0.0, //0
+            "P_Z": 0.0,
+            "body_x": 0.01,
+            "body_y": 4.8,
+            "body_z": 0.01,
+            "leftUpArm_x": 3.38,
+            "leftUpArm_y": 6.25,
+            "leftUpArm_z": 5.1,
+            "leftArm_x": 0.01,
+            "leftArm_y": 0.572,
+            "leftArm_z": 0.0,
+            "rightUpArm_x": 3.314,
+            "rightUpArm_y": 0.01,
+            "rightUpArm_z": 4.2,
+            "rightArm_x": 0.01,
+            "rightArm_y": 0.7,
+            "rightArm_z": 6.3,
+            "leftUpLeg_x": 0.01,
+            "leftUpLeg_y": 0.01,
+            "leftUpLeg_z": 4.8,
+            "leftLeg_x": 0.01,
+            "leftLeg_y": 0.01,
+            "leftLeg_z": 6.3,
+            "rightUpLeg_x": 0.1,
+            "rightUpLeg_y": 0.01,
+            "rightUpLeg_z": 4.7,
+            "rightLeg_x": 0.04,
+            "rightLeg_y": 0.04,
+            "rightLeg_z": 6.3
+          }
+        },
+        "key2": {
+          "0": {
+            "P_high": 17,
+            "P_X": 0, //0
             "P_Z": 0.0,
             "body_x": 0.01,
             "body_y": 4.8,
@@ -522,282 +532,282 @@ function loadJSON() {
             "rightLeg_z": 6.25
           }
         },
-      "key3": {
-        "0": {
-          "P_high": 17,
-          "P_X": -2.0,//-2.0
-          "P_Z": 0.0,
-          "body_x": 0.01,
-          "body_y": 4.8,
-          "body_z": 0.01,
-          "leftUpArm_x": 3.4,
-          "leftUpArm_y": 0.7,
-          "leftUpArm_z": 5.2,
-          "leftArm_x": 0.01,
-          "leftArm_y": 0.97,
-          "leftArm_z": 0.01,
-          "rightUpArm_x": 3.1,
-          "rightUpArm_y": 5.859,
-          "rightUpArm_z": 4.3,
-          "rightArm_x": 0.01,
-          "rightArm_y": 1.04,
-          "rightArm_z": 6.1,
-          "leftUpLeg_x": 0.01,
-          "leftUpLeg_y": 5.515,
-          "leftUpLeg_z": 4.7,
-          "leftLeg_x": 0.01,
-          "leftLeg_y": 1.318,
-          "leftLeg_z": 6.3,
-          "rightUpLeg_x": 0.1,
-          "rightUpLeg_y": 0.151,
-          "rightUpLeg_z": 4.8,
-          "rightLeg_x": 0.04,
-          "rightLeg_y": 0.01,
-          "rightLeg_z": 6.3
-        }
-      },
-      "key4": {
-        "0": {
-          "P_high": 17,
-          "P_X": -4.0,//-4
-          "P_Z": 0.0,
-          "body_x": 0.01,
-          "body_y": 4.8,
-          "body_z": 0.01,
-          "leftUpArm_x": 3.4,
-          "leftUpArm_y": 0.8,
-          "leftUpArm_z": 5.2,
-          "leftArm_x": 0.01,
-          "leftArm_y": 1.46,
-          "leftArm_z": 0.01,
-          "rightUpArm_x": 3.1,
-          "rightUpArm_y": 5.859,
-          "rightUpArm_z": 4.3,
-          "rightArm_x": 0.01,
-          "rightArm_y": 1.04,
-          "rightArm_z": 6.1,
-          "leftUpLeg_x": 0.01,
-          "leftUpLeg_y": 5.309,
-          "leftUpLeg_z": 4.8,
-          "leftLeg_x": 0.01,
-          "leftLeg_y": 1.064,
-          "leftLeg_z": 6.3,
-          "rightUpLeg_x": 0.1,
-          "rightUpLeg_y": 0.151,
-          "rightUpLeg_z": 4.7,
-          "rightLeg_x": 0.04,
-          "rightLeg_y": 0.291,
-          "rightLeg_z": 0.0
-        }
-      },
-      "key5": {
-        "0": {
-          "P_high": 15,
-          "P_X": -6.0,//-6
-          "P_Z": 0.0,
-          "body_x": 0.01,
-          "body_y": 4.8,
-          "body_z": 0.01,
-          "leftUpArm_x": 3.2,
-          "leftUpArm_y": 0.6,
-          "leftUpArm_z": 5.1,
-          "leftArm_x": 0.01,
-          "leftArm_y": 1.46,
-          "leftArm_z": 0.01,
-          "rightUpArm_x": 3.1,
-          "rightUpArm_y": 6.204,
-          "rightUpArm_z": 4.4,
-          "rightArm_x": 0.01,
-          "rightArm_y": 1.04,
-          "rightArm_z": 6.1,
-          "leftUpLeg_x": 0.01,
-          "leftUpLeg_y": 5.515,
-          "leftUpLeg_z": 4.8,
-          "leftLeg_x": 0.01,
-          "leftLeg_y": 0.698,
-          "leftLeg_z": 6.3,
-          "rightUpLeg_x": 0.1,
-          "rightUpLeg_y": 0.354,
-          "rightUpLeg_z": 4.7,
-          "rightLeg_x": 0.04,
-          "rightLeg_y": 0.423,
-          "rightLeg_z": 0.0
-        }
-      },
-      "key6": {
-        "0": {
-          "P_high": 16,
-          "P_X": -8,//-8
-          "P_Z": 0.0,
-          "body_x": 0.01,
-          "body_y": 4.8,
-          "body_z": 0.01,
-          "leftUpArm_x": 3.2,
-          "leftUpArm_y": 0.2,
-          "leftUpArm_z": 5.1,
-          "leftArm_x": 0.01,
-          "leftArm_y": 1.46,
-          "leftArm_z": 0.01,
-          "rightUpArm_x": 3.1,
-          "rightUpArm_y": 0.361,
-          "rightUpArm_z": 4.2,
-          "rightArm_x": 0.01,
-          "rightArm_y": 1.04,
-          "rightArm_z": 6.1,
-          "leftUpLeg_x": 0.01,
-          "leftUpLeg_y": 5.985,
-          "leftUpLeg_z": 4.8,
-          "leftLeg_x": 0.01,
-          "leftLeg_y": 0.432,
-          "leftLeg_z": 6.3,
-          "rightUpLeg_x": 0.01,
-          "rightUpLeg_y": 0.01,
-          "rightUpLeg_z": 4.6,
-          "rightLeg_x": 0.04,
-          "rightLeg_y": 0.767,
-          "rightLeg_z": 0.0
-        }
-      },
-      "key7": {
-        "0": {
-          "P_high": 17,
-          "P_X": -10.0,//-10.0
-          "P_Z": 0.0,
-          "body_x": 0.01,
-          "body_y": 4.8,
-          "body_z": 0.01,
-          "leftUpArm_x": 3.1,
-          "leftUpArm_y": 0.5,
-          "leftUpArm_z": 5.1,
-          "leftArm_x": 0.01,
-          "leftArm_y": 1.13,
-          "leftArm_z": 0.01,
-          "rightUpArm_x": 3.1,
-          "rightUpArm_y": 0.08,
-          "rightUpArm_z": 4.3,
-          "rightArm_x": 0.01,
-          "rightArm_y": 0.9,
-          "rightArm_z": 6.1,
-          "leftUpLeg_x": 0.01,
-          "leftUpLeg_y": 6.25,
-          "leftUpLeg_z": 4.8,
-          "leftLeg_x": 0.01,
-          "leftLeg_y": 0.216,
-          "leftLeg_z": 6.3,
-          "rightUpLeg_x": 0.22,
-          "rightUpLeg_y": 6.135,
-          "rightUpLeg_z": 4.7,
-          "rightLeg_x": 0.04,
-          "rightLeg_y": 0.423,
-          "rightLeg_z": 0.0
-        }
-      },
-      "key8": {
-        "0": {
-          "P_high": 17,
-          "P_X": -13,//-13
-          "P_Z": 0.0,
-          "body_x": 0.01,
-          "body_y": 4.8,
-          "body_z": 0.01,
-          "leftUpArm_x": 3.1,
-          "leftUpArm_y": 0.5,
-          "leftUpArm_z": 5.1,
-          "leftArm_x": 0.01,
-          "leftArm_y": 0.22,
-          "leftArm_z": 0.01,
-          "rightUpArm_x": 3.1,
-          "rightUpArm_y": 0.08,
-          "rightUpArm_z": 4.3,
-          "rightArm_x": 0.01,
-          "rightArm_y": 0.9,
-          "rightArm_z": 6.1,
-          "leftUpLeg_x": 0.01,
-          "leftUpLeg_y": 6.25,
-          "leftUpLeg_z": 4.8,
-          "leftLeg_x": 0.01,
-          "leftLeg_y": 0.432,
-          "leftLeg_z": 6.3,
-          "rightUpLeg_x": 0.01,
-          "rightUpLeg_y": 5.914,
-          "rightUpLeg_z": 4.7,
-          "rightLeg_x": 0.04,
-          "rightLeg_y": 0.423,
-          "rightLeg_z": 0.0
-        }
-      },
-      "key9": {
-        "0": {
-          "P_high": 17,
-          "P_X": -15.0,//-15
-          "P_Z": 0.0,
-          "body_x": 0.01,
-          "body_y": 4.8,
-          "body_z": 0.01,
-          "leftUpArm_x": 3.0,
-          "leftUpArm_y": 6.1,
-          "leftUpArm_z": 5.1,
-          "leftArm_x": 0.01,
-          "leftArm_y": 0.22,
-          "leftArm_z": 0.01,
-          "rightUpArm_x": 3.1,
-          "rightUpArm_y": 0.148,
-          "rightUpArm_z": 4.3,
-          "rightArm_x": 0.01,
-          "rightArm_y": 0.42,
-          "rightArm_z": 6.1,
-          "leftUpLeg_x": 0.01,
-          "leftUpLeg_y": 6.25,
-          "leftUpLeg_z": 4.8,
-          "leftLeg_x": 0.01,
-          "leftLeg_y": 0.629,
-          "leftLeg_z": 6.3,
-          "rightUpLeg_x": 0.01,
-          "rightUpLeg_y": 6.204,
-          "rightUpLeg_z": 4.7,
-          "rightLeg_x": 0.04,
-          "rightLeg_y": 0.354,
-          "rightLeg_z": 0.0
-        }
-      },
-      "key10": {
-        "0": {
-          "P_high": 20,
-          "P_X": -15,//-15
-          "P_Z": 0.0,
-          "body_x": 0.01,
-          "body_y": 4.8,
-          "body_z": 0.01,
-          "leftUpArm_x": 3.0,
-          "leftUpArm_y": 6.1,
-          "leftUpArm_z": 5.1,
-          "leftArm_x": 0.01,
-          "leftArm_y": 0.22,
-          "leftArm_z": 0.01,
-          "rightUpArm_x": 3.1,
-          "rightUpArm_y": 0.148,
-          "rightUpArm_z": 4.3,
-          "rightArm_x": 0.01,
-          "rightArm_y": 0.42,
-          "rightArm_z": 6.1,
-          "leftUpLeg_x": 0.01,
-          "leftUpLeg_y": 6.25,
-          "leftUpLeg_z": 4.8,
-          "leftLeg_x": 0.01,
-          "leftLeg_y": 0.221,
-          "leftLeg_z": 6.3,
-          "rightUpLeg_x": 0.01,
-          "rightUpLeg_y": 6.204,
-          "rightUpLeg_z": 4.7,
-          "rightLeg_x": 0.04,
-          "rightLeg_y": 0.354,
-          "rightLeg_z": 0.0
-        }
-      },
-       "key11": {
+        "key3": {
           "0": {
             "P_high": 17,
-            "P_X": -16.0,//-16
+            "P_X": -2.0, //-2.0
+            "P_Z": 0.0,
+            "body_x": 0.01,
+            "body_y": 4.8,
+            "body_z": 0.01,
+            "leftUpArm_x": 3.4,
+            "leftUpArm_y": 0.7,
+            "leftUpArm_z": 5.2,
+            "leftArm_x": 0.01,
+            "leftArm_y": 0.97,
+            "leftArm_z": 0.01,
+            "rightUpArm_x": 3.1,
+            "rightUpArm_y": 5.859,
+            "rightUpArm_z": 4.3,
+            "rightArm_x": 0.01,
+            "rightArm_y": 1.04,
+            "rightArm_z": 6.1,
+            "leftUpLeg_x": 0.01,
+            "leftUpLeg_y": 5.515,
+            "leftUpLeg_z": 4.7,
+            "leftLeg_x": 0.01,
+            "leftLeg_y": 1.318,
+            "leftLeg_z": 6.3,
+            "rightUpLeg_x": 0.1,
+            "rightUpLeg_y": 0.151,
+            "rightUpLeg_z": 4.8,
+            "rightLeg_x": 0.04,
+            "rightLeg_y": 0.01,
+            "rightLeg_z": 6.3
+          }
+        },
+        "key4": {
+          "0": {
+            "P_high": 17,
+            "P_X": -4.0, //-4
+            "P_Z": 0.0,
+            "body_x": 0.01,
+            "body_y": 4.8,
+            "body_z": 0.01,
+            "leftUpArm_x": 3.4,
+            "leftUpArm_y": 0.8,
+            "leftUpArm_z": 5.2,
+            "leftArm_x": 0.01,
+            "leftArm_y": 1.46,
+            "leftArm_z": 0.01,
+            "rightUpArm_x": 3.1,
+            "rightUpArm_y": 5.859,
+            "rightUpArm_z": 4.3,
+            "rightArm_x": 0.01,
+            "rightArm_y": 1.04,
+            "rightArm_z": 6.1,
+            "leftUpLeg_x": 0.01,
+            "leftUpLeg_y": 5.309,
+            "leftUpLeg_z": 4.8,
+            "leftLeg_x": 0.01,
+            "leftLeg_y": 1.064,
+            "leftLeg_z": 6.3,
+            "rightUpLeg_x": 0.1,
+            "rightUpLeg_y": 0.151,
+            "rightUpLeg_z": 4.7,
+            "rightLeg_x": 0.04,
+            "rightLeg_y": 0.291,
+            "rightLeg_z": 0.0
+          }
+        },
+        "key5": {
+          "0": {
+            "P_high": 15,
+            "P_X": -6.0, //-6
+            "P_Z": 0.0,
+            "body_x": 0.01,
+            "body_y": 4.8,
+            "body_z": 0.01,
+            "leftUpArm_x": 3.2,
+            "leftUpArm_y": 0.6,
+            "leftUpArm_z": 5.1,
+            "leftArm_x": 0.01,
+            "leftArm_y": 1.46,
+            "leftArm_z": 0.01,
+            "rightUpArm_x": 3.1,
+            "rightUpArm_y": 6.204,
+            "rightUpArm_z": 4.4,
+            "rightArm_x": 0.01,
+            "rightArm_y": 1.04,
+            "rightArm_z": 6.1,
+            "leftUpLeg_x": 0.01,
+            "leftUpLeg_y": 5.515,
+            "leftUpLeg_z": 4.8,
+            "leftLeg_x": 0.01,
+            "leftLeg_y": 0.698,
+            "leftLeg_z": 6.3,
+            "rightUpLeg_x": 0.1,
+            "rightUpLeg_y": 0.354,
+            "rightUpLeg_z": 4.7,
+            "rightLeg_x": 0.04,
+            "rightLeg_y": 0.423,
+            "rightLeg_z": 0.0
+          }
+        },
+        "key6": {
+          "0": {
+            "P_high": 16,
+            "P_X": -8, //-8
+            "P_Z": 0.0,
+            "body_x": 0.01,
+            "body_y": 4.8,
+            "body_z": 0.01,
+            "leftUpArm_x": 3.2,
+            "leftUpArm_y": 0.2,
+            "leftUpArm_z": 5.1,
+            "leftArm_x": 0.01,
+            "leftArm_y": 1.46,
+            "leftArm_z": 0.01,
+            "rightUpArm_x": 3.1,
+            "rightUpArm_y": 0.361,
+            "rightUpArm_z": 4.2,
+            "rightArm_x": 0.01,
+            "rightArm_y": 1.04,
+            "rightArm_z": 6.1,
+            "leftUpLeg_x": 0.01,
+            "leftUpLeg_y": 5.985,
+            "leftUpLeg_z": 4.8,
+            "leftLeg_x": 0.01,
+            "leftLeg_y": 0.432,
+            "leftLeg_z": 6.3,
+            "rightUpLeg_x": 0.01,
+            "rightUpLeg_y": 0.01,
+            "rightUpLeg_z": 4.6,
+            "rightLeg_x": 0.04,
+            "rightLeg_y": 0.767,
+            "rightLeg_z": 0.0
+          }
+        },
+        "key7": {
+          "0": {
+            "P_high": 17,
+            "P_X": -10.0, //-10.0
+            "P_Z": 0.0,
+            "body_x": 0.01,
+            "body_y": 4.8,
+            "body_z": 0.01,
+            "leftUpArm_x": 3.1,
+            "leftUpArm_y": 0.5,
+            "leftUpArm_z": 5.1,
+            "leftArm_x": 0.01,
+            "leftArm_y": 1.13,
+            "leftArm_z": 0.01,
+            "rightUpArm_x": 3.1,
+            "rightUpArm_y": 0.08,
+            "rightUpArm_z": 4.3,
+            "rightArm_x": 0.01,
+            "rightArm_y": 0.9,
+            "rightArm_z": 6.1,
+            "leftUpLeg_x": 0.01,
+            "leftUpLeg_y": 6.25,
+            "leftUpLeg_z": 4.8,
+            "leftLeg_x": 0.01,
+            "leftLeg_y": 0.216,
+            "leftLeg_z": 6.3,
+            "rightUpLeg_x": 0.22,
+            "rightUpLeg_y": 6.135,
+            "rightUpLeg_z": 4.7,
+            "rightLeg_x": 0.04,
+            "rightLeg_y": 0.423,
+            "rightLeg_z": 0.0
+          }
+        },
+        "key8": {
+          "0": {
+            "P_high": 17,
+            "P_X": -13, //-13
+            "P_Z": 0.0,
+            "body_x": 0.01,
+            "body_y": 4.8,
+            "body_z": 0.01,
+            "leftUpArm_x": 3.1,
+            "leftUpArm_y": 0.5,
+            "leftUpArm_z": 5.1,
+            "leftArm_x": 0.01,
+            "leftArm_y": 0.22,
+            "leftArm_z": 0.01,
+            "rightUpArm_x": 3.1,
+            "rightUpArm_y": 0.08,
+            "rightUpArm_z": 4.3,
+            "rightArm_x": 0.01,
+            "rightArm_y": 0.9,
+            "rightArm_z": 6.1,
+            "leftUpLeg_x": 0.01,
+            "leftUpLeg_y": 6.25,
+            "leftUpLeg_z": 4.8,
+            "leftLeg_x": 0.01,
+            "leftLeg_y": 0.432,
+            "leftLeg_z": 6.3,
+            "rightUpLeg_x": 0.01,
+            "rightUpLeg_y": 5.914,
+            "rightUpLeg_z": 4.7,
+            "rightLeg_x": 0.04,
+            "rightLeg_y": 0.423,
+            "rightLeg_z": 0.0
+          }
+        },
+        "key9": {
+          "0": {
+            "P_high": 17,
+            "P_X": -15.0, //-15
+            "P_Z": 0.0,
+            "body_x": 0.01,
+            "body_y": 4.8,
+            "body_z": 0.01,
+            "leftUpArm_x": 3.0,
+            "leftUpArm_y": 6.1,
+            "leftUpArm_z": 5.1,
+            "leftArm_x": 0.01,
+            "leftArm_y": 0.22,
+            "leftArm_z": 0.01,
+            "rightUpArm_x": 3.1,
+            "rightUpArm_y": 0.148,
+            "rightUpArm_z": 4.3,
+            "rightArm_x": 0.01,
+            "rightArm_y": 0.42,
+            "rightArm_z": 6.1,
+            "leftUpLeg_x": 0.01,
+            "leftUpLeg_y": 6.25,
+            "leftUpLeg_z": 4.8,
+            "leftLeg_x": 0.01,
+            "leftLeg_y": 0.629,
+            "leftLeg_z": 6.3,
+            "rightUpLeg_x": 0.01,
+            "rightUpLeg_y": 6.204,
+            "rightUpLeg_z": 4.7,
+            "rightLeg_x": 0.04,
+            "rightLeg_y": 0.354,
+            "rightLeg_z": 0.0
+          }
+        },
+        "key10": {
+          "0": {
+            "P_high": 20,
+            "P_X": -15, //-15
+            "P_Z": 0.0,
+            "body_x": 0.01,
+            "body_y": 4.8,
+            "body_z": 0.01,
+            "leftUpArm_x": 3.0,
+            "leftUpArm_y": 6.1,
+            "leftUpArm_z": 5.1,
+            "leftArm_x": 0.01,
+            "leftArm_y": 0.22,
+            "leftArm_z": 0.01,
+            "rightUpArm_x": 3.1,
+            "rightUpArm_y": 0.148,
+            "rightUpArm_z": 4.3,
+            "rightArm_x": 0.01,
+            "rightArm_y": 0.42,
+            "rightArm_z": 6.1,
+            "leftUpLeg_x": 0.01,
+            "leftUpLeg_y": 6.25,
+            "leftUpLeg_z": 4.8,
+            "leftLeg_x": 0.01,
+            "leftLeg_y": 0.221,
+            "leftLeg_z": 6.3,
+            "rightUpLeg_x": 0.01,
+            "rightUpLeg_y": 6.204,
+            "rightUpLeg_z": 4.7,
+            "rightLeg_x": 0.04,
+            "rightLeg_y": 0.354,
+            "rightLeg_z": 0.0
+          }
+        },
+        "key11": {
+          "0": {
+            "P_high": 17,
+            "P_X": -16.0, //-16
             "P_Z": 0.0,
             "body_x": 0.01,
             "body_y": 4.8,
@@ -827,11 +837,11 @@ function loadJSON() {
             "rightLeg_y": 0.35408602150537655,
             "rightLeg_z": 0.0
           }
-      },
-      "key12": {
+        },
+        "key12": {
           "0": {
             "P_high": 17,
-            "P_X": -18.0,//-18
+            "P_X": -18.0, //-18
             "P_Z": 0.0,
             "body_x": 0.01,
             "body_y": 4.8,
@@ -861,11 +871,11 @@ function loadJSON() {
             "rightLeg_y": 0.35408602150537655,
             "rightLeg_z": 0.0
           }
-      },
-      "key13": {
+        },
+        "key13": {
           "0": {
             "P_high": 17,
-            "P_X": -19.0,//-19
+            "P_X": -19.0, //-19
             "P_Z": 0.0,
             "body_x": 0.01,
             "body_y": 4.8,
@@ -895,11 +905,11 @@ function loadJSON() {
             "rightLeg_y": 0.7831906505209802,
             "rightLeg_z": 0.0
           }
-      },
-      "key14": {
+        },
+        "key14": {
           "0": {
             "P_high": 17,
-            "P_X": -23,//-23
+            "P_X": -23, //-23
             "P_Z": 0.0,
             "body_x": 0.01,
             "body_y": 4.8,
@@ -929,11 +939,11 @@ function loadJSON() {
             "rightLeg_y": 0.3614502956913546,
             "rightLeg_z": 0.0
           }
-      },
-      "key15": {
+        },
+        "key15": {
           "0": {
             "P_high": 17,
-            "P_X": -24.0,//-24
+            "P_X": -24.0, //-24
             "P_Z": 0.0,
             "body_x": 0.01,
             "body_y": 4.8,
@@ -963,11 +973,11 @@ function loadJSON() {
             "rightLeg_y": 0.7831906505209792,
             "rightLeg_z": 0.01
           }
-      },
-      "key16": {
+        },
+        "key16": {
           "0": {
             "P_high": 16.225375950436504,
-            "P_X": -26.620670233736973,//-26.620670233736973
+            "P_X": -26.620670233736973, //-26.620670233736973
             "P_Z": 0.0,
             "body_x": 0.01,
             "body_y": 4.8,
@@ -1001,7 +1011,7 @@ function loadJSON() {
         "key17": {
           "0": {
             "P_high": 16.225375950436504,
-            "P_X": -27.97240214024218,//-27.97240214024218
+            "P_X": -27.97240214024218, //-27.97240214024218
             "P_Z": 0.0,
             "body_x": 0.01,
             "body_y": 4.8,
@@ -1035,7 +1045,7 @@ function loadJSON() {
         "key18": {
           "0": {
             "P_high": 16.563196282737263,
-            "P_X": -29.324134046747396,//-29.324134046747396
+            "P_X": -29.324134046747396, //-29.324134046747396
             "P_Z": 0.0,
             "body_x": 0.01,
             "body_y": 4.8,
@@ -1069,7 +1079,7 @@ function loadJSON() {
         "key19": {
           "0": {
             "P_high": 16.563196282737263,
-            "P_X": -30,//-30
+            "P_X": -30, //-30
             "P_Z": 0.0,
             "body_x": 0.01,
             "body_y": 4.8,
@@ -1305,346 +1315,346 @@ function loadJSON() {
           }
         },
         "key25": {
-        "0": {
-          "P_high": 17,
-          "P_X": -35.0,
-          "P_Z": 0.0,
-          "body_x": 0.01,
-          "body_y": 4.8,
-          "body_z": 0.01,
-          "leftUpArm_x": 3.38,
-          "leftUpArm_y": 6.25,
-          "leftUpArm_z": 5.1,
-          "leftArm_x": 0.01,
-          "leftArm_y": 0.572,
-          "leftArm_z": 0.0,
-          "rightUpArm_x": 3.314,
-          "rightUpArm_y": 0.01,
-          "rightUpArm_z": 4.2,
-          "rightArm_x": 0.01,
-          "rightArm_y": 0.7,
-          "rightArm_z": 6.3,
-          "leftUpLeg_x": 0.01,
-          "leftUpLeg_y": 0.01,
-          "leftUpLeg_z": 4.8,
-          "leftLeg_x": 0.01,
-          "leftLeg_y": 0.01,
-          "leftLeg_z": 6.3,
-          "rightUpLeg_x": 0.1,
-          "rightUpLeg_y": 0.01,
-          "rightUpLeg_z": 4.7,
-          "rightLeg_x": 0.04,
-          "rightLeg_y": 0.04,
-          "rightLeg_z": 6.3
-        }
-      },
-      "key26": {
-        "0": {
-          "P_high": 17,
-          "P_X": -35.0,
-          "P_Z": 0.0,
-          "body_x": 0.01,
-          "body_y": 4.8,
-          "body_z": 0.01,
-          "leftUpArm_x": 3.4,
-          "leftUpArm_y": 0.6,
-          "leftUpArm_z": 5.1,
-          "leftArm_x": 0.01,
-          "leftArm_y": 0.43,
-          "leftArm_z": 0.01,
-          "rightUpArm_x": 3.3,
-          "rightUpArm_y": 6.25,
-          "rightUpArm_z": 4.3,
-          "rightArm_x": 0.01,
-          "rightArm_y": 0.77,
-          "rightArm_z": 6.1,
-          "leftUpLeg_x": 0.01,
-          "leftUpLeg_y": 5.928,
-          "leftUpLeg_z": 4.8,
-          "leftLeg_x": 0.01,
-          "leftLeg_y": 0.561,
-          "leftLeg_z": 6.3,
-          "rightUpLeg_x": 0.1,
-          "rightUpLeg_y": 0.01,
-          "rightUpLeg_z": 4.8,
-          "rightLeg_x": 0.04,
-          "rightLeg_y": 0.04,
-          "rightLeg_z": 6.3
-        }
-      },
-      "key27": {
-        "0": {
-          "P_high": 17,
-          "P_X": -37.0,
-          "P_Z": 0.0,
-          "body_x": 0.01,
-          "body_y": 4.8,
-          "body_z": 0.01,
-          "leftUpArm_x": 3.4,
-          "leftUpArm_y": 0.7,
-          "leftUpArm_z": 5.2,
-          "leftArm_x": 0.01,
-          "leftArm_y": 0.97,
-          "leftArm_z": 0.01,
-          "rightUpArm_x": 3.1,
-          "rightUpArm_y": 5.859,
-          "rightUpArm_z": 4.3,
-          "rightArm_x": 0.01,
-          "rightArm_y": 1.04,
-          "rightArm_z": 6.1,
-          "leftUpLeg_x": 0.01,
-          "leftUpLeg_y": 5.515,
-          "leftUpLeg_z": 4.7,
-          "leftLeg_x": 0.01,
-          "leftLeg_y": 1.318,
-          "leftLeg_z": 6.3,
-          "rightUpLeg_x": 0.1,
-          "rightUpLeg_y": 0.151,
-          "rightUpLeg_z": 4.8,
-          "rightLeg_x": 0.04,
-          "rightLeg_y": 0.01,
-          "rightLeg_z": 6.3
-        }
-      },
-      "key28": {
-        "0": {
-          "P_high": 17,
-          "P_X": -39.0,
-          "P_Z": 0.0,
-          "body_x": 0.01,
-          "body_y": 4.8,
-          "body_z": 0.01,
-          "leftUpArm_x": 3.4,
-          "leftUpArm_y": 0.8,
-          "leftUpArm_z": 5.2,
-          "leftArm_x": 0.01,
-          "leftArm_y": 1.46,
-          "leftArm_z": 0.01,
-          "rightUpArm_x": 3.1,
-          "rightUpArm_y": 5.859,
-          "rightUpArm_z": 4.3,
-          "rightArm_x": 0.01,
-          "rightArm_y": 1.04,
-          "rightArm_z": 6.1,
-          "leftUpLeg_x": 0.01,
-          "leftUpLeg_y": 5.309,
-          "leftUpLeg_z": 4.8,
-          "leftLeg_x": 0.01,
-          "leftLeg_y": 1.064,
-          "leftLeg_z": 6.3,
-          "rightUpLeg_x": 0.1,
-          "rightUpLeg_y": 0.151,
-          "rightUpLeg_z": 4.7,
-          "rightLeg_x": 0.04,
-          "rightLeg_y": 0.291,
-          "rightLeg_z": 0.0
-        }
-      },
-      "key29": {
-        "0": {
-          "P_high": 15,
-          "P_X": -41.0,
-          "P_Z": 0.0,
-          "body_x": 0.01,
-          "body_y": 4.8,
-          "body_z": 0.01,
-          "leftUpArm_x": 3.2,
-          "leftUpArm_y": 0.6,
-          "leftUpArm_z": 5.1,
-          "leftArm_x": 0.01,
-          "leftArm_y": 1.46,
-          "leftArm_z": 0.01,
-          "rightUpArm_x": 3.1,
-          "rightUpArm_y": 6.204,
-          "rightUpArm_z": 4.4,
-          "rightArm_x": 0.01,
-          "rightArm_y": 1.04,
-          "rightArm_z": 6.1,
-          "leftUpLeg_x": 0.01,
-          "leftUpLeg_y": 5.515,
-          "leftUpLeg_z": 4.8,
-          "leftLeg_x": 0.01,
-          "leftLeg_y": 0.698,
-          "leftLeg_z": 6.3,
-          "rightUpLeg_x": 0.1,
-          "rightUpLeg_y": 0.354,
-          "rightUpLeg_z": 4.7,
-          "rightLeg_x": 0.04,
-          "rightLeg_y": 0.423,
-          "rightLeg_z": 0.0
-        }
-      },
-      "key30": {
-        "0": {
-          "P_high": 16,
-          "P_X": -43.0,
-          "P_Z": 0.0,
-          "body_x": 0.01,
-          "body_y": 4.8,
-          "body_z": 0.01,
-          "leftUpArm_x": 3.2,
-          "leftUpArm_y": 0.2,
-          "leftUpArm_z": 5.1,
-          "leftArm_x": 0.01,
-          "leftArm_y": 1.46,
-          "leftArm_z": 0.01,
-          "rightUpArm_x": 3.1,
-          "rightUpArm_y": 0.361,
-          "rightUpArm_z": 4.2,
-          "rightArm_x": 0.01,
-          "rightArm_y": 1.04,
-          "rightArm_z": 6.1,
-          "leftUpLeg_x": 0.01,
-          "leftUpLeg_y": 5.985,
-          "leftUpLeg_z": 4.8,
-          "leftLeg_x": 0.01,
-          "leftLeg_y": 0.432,
-          "leftLeg_z": 6.3,
-          "rightUpLeg_x": 0.01,
-          "rightUpLeg_y": 0.01,
-          "rightUpLeg_z": 4.6,
-          "rightLeg_x": 0.04,
-          "rightLeg_y": 0.767,
-          "rightLeg_z": 0.0
-        }
-      },
-      "key31": {
-        "0": {
-          "P_high": 17,
-          "P_X": -45.0,
-          "P_Z": 0.0,
-          "body_x": 0.01,
-          "body_y": 4.8,
-          "body_z": 0.01,
-          "leftUpArm_x": 3.1,
-          "leftUpArm_y": 0.5,
-          "leftUpArm_z": 5.1,
-          "leftArm_x": 0.01,
-          "leftArm_y": 1.13,
-          "leftArm_z": 0.01,
-          "rightUpArm_x": 3.1,
-          "rightUpArm_y": 0.08,
-          "rightUpArm_z": 4.3,
-          "rightArm_x": 0.01,
-          "rightArm_y": 0.9,
-          "rightArm_z": 6.1,
-          "leftUpLeg_x": 0.01,
-          "leftUpLeg_y": 6.25,
-          "leftUpLeg_z": 4.8,
-          "leftLeg_x": 0.01,
-          "leftLeg_y": 0.216,
-          "leftLeg_z": 6.3,
-          "rightUpLeg_x": 0.22,
-          "rightUpLeg_y": 6.135,
-          "rightUpLeg_z": 4.7,
-          "rightLeg_x": 0.04,
-          "rightLeg_y": 0.423,
-          "rightLeg_z": 0.0
-        }
-      },
-      "key32": {
-        "0": {
-          "P_high": 17,
-          "P_X": -48.0,
-          "P_Z": 0.0,
-          "body_x": 0.01,
-          "body_y": 4.8,
-          "body_z": 0.01,
-          "leftUpArm_x": 3.1,
-          "leftUpArm_y": 0.5,
-          "leftUpArm_z": 5.1,
-          "leftArm_x": 0.01,
-          "leftArm_y": 0.22,
-          "leftArm_z": 0.01,
-          "rightUpArm_x": 3.1,
-          "rightUpArm_y": 0.08,
-          "rightUpArm_z": 4.3,
-          "rightArm_x": 0.01,
-          "rightArm_y": 0.9,
-          "rightArm_z": 6.1,
-          "leftUpLeg_x": 0.01,
-          "leftUpLeg_y": 6.25,
-          "leftUpLeg_z": 4.8,
-          "leftLeg_x": 0.01,
-          "leftLeg_y": 0.432,
-          "leftLeg_z": 6.3,
-          "rightUpLeg_x": 0.01,
-          "rightUpLeg_y": 5.914,
-          "rightUpLeg_z": 4.7,
-          "rightLeg_x": 0.04,
-          "rightLeg_y": 0.423,
-          "rightLeg_z": 0.0
-        }
-      },
-      "key33": {
-        "0": {
-          "P_high": 17,
-          "P_X": -50.0,
-          "P_Z": 0.0,
-          "body_x": 0.01,
-          "body_y": 4.8,
-          "body_z": 0.01,
-          "leftUpArm_x": 3.0,
-          "leftUpArm_y": 6.1,
-          "leftUpArm_z": 5.1,
-          "leftArm_x": 0.01,
-          "leftArm_y": 0.22,
-          "leftArm_z": 0.01,
-          "rightUpArm_x": 3.1,
-          "rightUpArm_y": 0.148,
-          "rightUpArm_z": 4.3,
-          "rightArm_x": 0.01,
-          "rightArm_y": 0.42,
-          "rightArm_z": 6.1,
-          "leftUpLeg_x": 0.01,
-          "leftUpLeg_y": 6.25,
-          "leftUpLeg_z": 4.8,
-          "leftLeg_x": 0.01,
-          "leftLeg_y": 0.629,
-          "leftLeg_z": 6.3,
-          "rightUpLeg_x": 0.01,
-          "rightUpLeg_y": 6.204,
-          "rightUpLeg_z": 4.7,
-          "rightLeg_x": 0.04,
-          "rightLeg_y": 0.354,
-          "rightLeg_z": 0.0
-        }
-      },
-      "key34": {
-        "0": {
-          "P_high": 20,
-          "P_X": -50.0,
-          "P_Z": 0.0,
-          "body_x": 0.01,
-          "body_y": 4.8,
-          "body_z": 0.01,
-          "leftUpArm_x": 3.0,
-          "leftUpArm_y": 6.1,
-          "leftUpArm_z": 5.1,
-          "leftArm_x": 0.01,
-          "leftArm_y": 0.22,
-          "leftArm_z": 0.01,
-          "rightUpArm_x": 3.1,
-          "rightUpArm_y": 0.148,
-          "rightUpArm_z": 4.3,
-          "rightArm_x": 0.01,
-          "rightArm_y": 0.42,
-          "rightArm_z": 6.1,
-          "leftUpLeg_x": 0.01,
-          "leftUpLeg_y": 6.25,
-          "leftUpLeg_z": 4.8,
-          "leftLeg_x": 0.01,
-          "leftLeg_y": 0.221,
-          "leftLeg_z": 6.3,
-          "rightUpLeg_x": 0.01,
-          "rightUpLeg_y": 6.204,
-          "rightUpLeg_z": 4.7,
-          "rightLeg_x": 0.04,
-          "rightLeg_y": 0.354,
-          "rightLeg_z": 0.0
-        }
-      },
-       "key35": {
+          "0": {
+            "P_high": 17,
+            "P_X": -35.0,
+            "P_Z": 0.0,
+            "body_x": 0.01,
+            "body_y": 4.8,
+            "body_z": 0.01,
+            "leftUpArm_x": 3.38,
+            "leftUpArm_y": 6.25,
+            "leftUpArm_z": 5.1,
+            "leftArm_x": 0.01,
+            "leftArm_y": 0.572,
+            "leftArm_z": 0.0,
+            "rightUpArm_x": 3.314,
+            "rightUpArm_y": 0.01,
+            "rightUpArm_z": 4.2,
+            "rightArm_x": 0.01,
+            "rightArm_y": 0.7,
+            "rightArm_z": 6.3,
+            "leftUpLeg_x": 0.01,
+            "leftUpLeg_y": 0.01,
+            "leftUpLeg_z": 4.8,
+            "leftLeg_x": 0.01,
+            "leftLeg_y": 0.01,
+            "leftLeg_z": 6.3,
+            "rightUpLeg_x": 0.1,
+            "rightUpLeg_y": 0.01,
+            "rightUpLeg_z": 4.7,
+            "rightLeg_x": 0.04,
+            "rightLeg_y": 0.04,
+            "rightLeg_z": 6.3
+          }
+        },
+        "key26": {
+          "0": {
+            "P_high": 17,
+            "P_X": -35.0,
+            "P_Z": 0.0,
+            "body_x": 0.01,
+            "body_y": 4.8,
+            "body_z": 0.01,
+            "leftUpArm_x": 3.4,
+            "leftUpArm_y": 0.6,
+            "leftUpArm_z": 5.1,
+            "leftArm_x": 0.01,
+            "leftArm_y": 0.43,
+            "leftArm_z": 0.01,
+            "rightUpArm_x": 3.3,
+            "rightUpArm_y": 6.25,
+            "rightUpArm_z": 4.3,
+            "rightArm_x": 0.01,
+            "rightArm_y": 0.77,
+            "rightArm_z": 6.1,
+            "leftUpLeg_x": 0.01,
+            "leftUpLeg_y": 5.928,
+            "leftUpLeg_z": 4.8,
+            "leftLeg_x": 0.01,
+            "leftLeg_y": 0.561,
+            "leftLeg_z": 6.3,
+            "rightUpLeg_x": 0.1,
+            "rightUpLeg_y": 0.01,
+            "rightUpLeg_z": 4.8,
+            "rightLeg_x": 0.04,
+            "rightLeg_y": 0.04,
+            "rightLeg_z": 6.3
+          }
+        },
+        "key27": {
+          "0": {
+            "P_high": 17,
+            "P_X": -37.0,
+            "P_Z": 0.0,
+            "body_x": 0.01,
+            "body_y": 4.8,
+            "body_z": 0.01,
+            "leftUpArm_x": 3.4,
+            "leftUpArm_y": 0.7,
+            "leftUpArm_z": 5.2,
+            "leftArm_x": 0.01,
+            "leftArm_y": 0.97,
+            "leftArm_z": 0.01,
+            "rightUpArm_x": 3.1,
+            "rightUpArm_y": 5.859,
+            "rightUpArm_z": 4.3,
+            "rightArm_x": 0.01,
+            "rightArm_y": 1.04,
+            "rightArm_z": 6.1,
+            "leftUpLeg_x": 0.01,
+            "leftUpLeg_y": 5.515,
+            "leftUpLeg_z": 4.7,
+            "leftLeg_x": 0.01,
+            "leftLeg_y": 1.318,
+            "leftLeg_z": 6.3,
+            "rightUpLeg_x": 0.1,
+            "rightUpLeg_y": 0.151,
+            "rightUpLeg_z": 4.8,
+            "rightLeg_x": 0.04,
+            "rightLeg_y": 0.01,
+            "rightLeg_z": 6.3
+          }
+        },
+        "key28": {
+          "0": {
+            "P_high": 17,
+            "P_X": -39.0,
+            "P_Z": 0.0,
+            "body_x": 0.01,
+            "body_y": 4.8,
+            "body_z": 0.01,
+            "leftUpArm_x": 3.4,
+            "leftUpArm_y": 0.8,
+            "leftUpArm_z": 5.2,
+            "leftArm_x": 0.01,
+            "leftArm_y": 1.46,
+            "leftArm_z": 0.01,
+            "rightUpArm_x": 3.1,
+            "rightUpArm_y": 5.859,
+            "rightUpArm_z": 4.3,
+            "rightArm_x": 0.01,
+            "rightArm_y": 1.04,
+            "rightArm_z": 6.1,
+            "leftUpLeg_x": 0.01,
+            "leftUpLeg_y": 5.309,
+            "leftUpLeg_z": 4.8,
+            "leftLeg_x": 0.01,
+            "leftLeg_y": 1.064,
+            "leftLeg_z": 6.3,
+            "rightUpLeg_x": 0.1,
+            "rightUpLeg_y": 0.151,
+            "rightUpLeg_z": 4.7,
+            "rightLeg_x": 0.04,
+            "rightLeg_y": 0.291,
+            "rightLeg_z": 0.0
+          }
+        },
+        "key29": {
+          "0": {
+            "P_high": 15,
+            "P_X": -41.0,
+            "P_Z": 0.0,
+            "body_x": 0.01,
+            "body_y": 4.8,
+            "body_z": 0.01,
+            "leftUpArm_x": 3.2,
+            "leftUpArm_y": 0.6,
+            "leftUpArm_z": 5.1,
+            "leftArm_x": 0.01,
+            "leftArm_y": 1.46,
+            "leftArm_z": 0.01,
+            "rightUpArm_x": 3.1,
+            "rightUpArm_y": 6.204,
+            "rightUpArm_z": 4.4,
+            "rightArm_x": 0.01,
+            "rightArm_y": 1.04,
+            "rightArm_z": 6.1,
+            "leftUpLeg_x": 0.01,
+            "leftUpLeg_y": 5.515,
+            "leftUpLeg_z": 4.8,
+            "leftLeg_x": 0.01,
+            "leftLeg_y": 0.698,
+            "leftLeg_z": 6.3,
+            "rightUpLeg_x": 0.1,
+            "rightUpLeg_y": 0.354,
+            "rightUpLeg_z": 4.7,
+            "rightLeg_x": 0.04,
+            "rightLeg_y": 0.423,
+            "rightLeg_z": 0.0
+          }
+        },
+        "key30": {
+          "0": {
+            "P_high": 16,
+            "P_X": -43.0,
+            "P_Z": 0.0,
+            "body_x": 0.01,
+            "body_y": 4.8,
+            "body_z": 0.01,
+            "leftUpArm_x": 3.2,
+            "leftUpArm_y": 0.2,
+            "leftUpArm_z": 5.1,
+            "leftArm_x": 0.01,
+            "leftArm_y": 1.46,
+            "leftArm_z": 0.01,
+            "rightUpArm_x": 3.1,
+            "rightUpArm_y": 0.361,
+            "rightUpArm_z": 4.2,
+            "rightArm_x": 0.01,
+            "rightArm_y": 1.04,
+            "rightArm_z": 6.1,
+            "leftUpLeg_x": 0.01,
+            "leftUpLeg_y": 5.985,
+            "leftUpLeg_z": 4.8,
+            "leftLeg_x": 0.01,
+            "leftLeg_y": 0.432,
+            "leftLeg_z": 6.3,
+            "rightUpLeg_x": 0.01,
+            "rightUpLeg_y": 0.01,
+            "rightUpLeg_z": 4.6,
+            "rightLeg_x": 0.04,
+            "rightLeg_y": 0.767,
+            "rightLeg_z": 0.0
+          }
+        },
+        "key31": {
+          "0": {
+            "P_high": 17,
+            "P_X": -45.0,
+            "P_Z": 0.0,
+            "body_x": 0.01,
+            "body_y": 4.8,
+            "body_z": 0.01,
+            "leftUpArm_x": 3.1,
+            "leftUpArm_y": 0.5,
+            "leftUpArm_z": 5.1,
+            "leftArm_x": 0.01,
+            "leftArm_y": 1.13,
+            "leftArm_z": 0.01,
+            "rightUpArm_x": 3.1,
+            "rightUpArm_y": 0.08,
+            "rightUpArm_z": 4.3,
+            "rightArm_x": 0.01,
+            "rightArm_y": 0.9,
+            "rightArm_z": 6.1,
+            "leftUpLeg_x": 0.01,
+            "leftUpLeg_y": 6.25,
+            "leftUpLeg_z": 4.8,
+            "leftLeg_x": 0.01,
+            "leftLeg_y": 0.216,
+            "leftLeg_z": 6.3,
+            "rightUpLeg_x": 0.22,
+            "rightUpLeg_y": 6.135,
+            "rightUpLeg_z": 4.7,
+            "rightLeg_x": 0.04,
+            "rightLeg_y": 0.423,
+            "rightLeg_z": 0.0
+          }
+        },
+        "key32": {
+          "0": {
+            "P_high": 17,
+            "P_X": -48.0,
+            "P_Z": 0.0,
+            "body_x": 0.01,
+            "body_y": 4.8,
+            "body_z": 0.01,
+            "leftUpArm_x": 3.1,
+            "leftUpArm_y": 0.5,
+            "leftUpArm_z": 5.1,
+            "leftArm_x": 0.01,
+            "leftArm_y": 0.22,
+            "leftArm_z": 0.01,
+            "rightUpArm_x": 3.1,
+            "rightUpArm_y": 0.08,
+            "rightUpArm_z": 4.3,
+            "rightArm_x": 0.01,
+            "rightArm_y": 0.9,
+            "rightArm_z": 6.1,
+            "leftUpLeg_x": 0.01,
+            "leftUpLeg_y": 6.25,
+            "leftUpLeg_z": 4.8,
+            "leftLeg_x": 0.01,
+            "leftLeg_y": 0.432,
+            "leftLeg_z": 6.3,
+            "rightUpLeg_x": 0.01,
+            "rightUpLeg_y": 5.914,
+            "rightUpLeg_z": 4.7,
+            "rightLeg_x": 0.04,
+            "rightLeg_y": 0.423,
+            "rightLeg_z": 0.0
+          }
+        },
+        "key33": {
+          "0": {
+            "P_high": 17,
+            "P_X": -50.0,
+            "P_Z": 0.0,
+            "body_x": 0.01,
+            "body_y": 4.8,
+            "body_z": 0.01,
+            "leftUpArm_x": 3.0,
+            "leftUpArm_y": 6.1,
+            "leftUpArm_z": 5.1,
+            "leftArm_x": 0.01,
+            "leftArm_y": 0.22,
+            "leftArm_z": 0.01,
+            "rightUpArm_x": 3.1,
+            "rightUpArm_y": 0.148,
+            "rightUpArm_z": 4.3,
+            "rightArm_x": 0.01,
+            "rightArm_y": 0.42,
+            "rightArm_z": 6.1,
+            "leftUpLeg_x": 0.01,
+            "leftUpLeg_y": 6.25,
+            "leftUpLeg_z": 4.8,
+            "leftLeg_x": 0.01,
+            "leftLeg_y": 0.629,
+            "leftLeg_z": 6.3,
+            "rightUpLeg_x": 0.01,
+            "rightUpLeg_y": 6.204,
+            "rightUpLeg_z": 4.7,
+            "rightLeg_x": 0.04,
+            "rightLeg_y": 0.354,
+            "rightLeg_z": 0.0
+          }
+        },
+        "key34": {
+          "0": {
+            "P_high": 20,
+            "P_X": -50.0,
+            "P_Z": 0.0,
+            "body_x": 0.01,
+            "body_y": 4.8,
+            "body_z": 0.01,
+            "leftUpArm_x": 3.0,
+            "leftUpArm_y": 6.1,
+            "leftUpArm_z": 5.1,
+            "leftArm_x": 0.01,
+            "leftArm_y": 0.22,
+            "leftArm_z": 0.01,
+            "rightUpArm_x": 3.1,
+            "rightUpArm_y": 0.148,
+            "rightUpArm_z": 4.3,
+            "rightArm_x": 0.01,
+            "rightArm_y": 0.42,
+            "rightArm_z": 6.1,
+            "leftUpLeg_x": 0.01,
+            "leftUpLeg_y": 6.25,
+            "leftUpLeg_z": 4.8,
+            "leftLeg_x": 0.01,
+            "leftLeg_y": 0.221,
+            "leftLeg_z": 6.3,
+            "rightUpLeg_x": 0.01,
+            "rightUpLeg_y": 6.204,
+            "rightUpLeg_z": 4.7,
+            "rightLeg_x": 0.04,
+            "rightLeg_y": 0.354,
+            "rightLeg_z": 0.0
+          }
+        },
+        "key35": {
           "0": {
             "P_high": 17,
             "P_X": -51,
@@ -1677,8 +1687,8 @@ function loadJSON() {
             "rightLeg_y": 0.35408602150537655,
             "rightLeg_z": 0.0
           }
-      },
-      "key36": {
+        },
+        "key36": {
           "0": {
             "P_high": 17,
             "P_X": -53,
@@ -1711,8 +1721,8 @@ function loadJSON() {
             "rightLeg_y": 0.35408602150537655,
             "rightLeg_z": 0.0
           }
-      },
-      "key37": {
+        },
+        "key37": {
           "0": {
             "P_high": 17,
             "P_X": -54.862010701210924,
@@ -1745,8 +1755,8 @@ function loadJSON() {
             "rightLeg_y": 0.7831906505209802,
             "rightLeg_z": 0.0
           }
-      },
-      "key38": {
+        },
+        "key38": {
           "0": {
             "P_high": 17,
             "P_X": -58,
@@ -1779,8 +1789,8 @@ function loadJSON() {
             "rightLeg_y": 0.3614502956913546,
             "rightLeg_z": 0.0
           }
-      },
-      "key39": {
+        },
+        "key39": {
           "0": {
             "P_high": 17,
             "P_X": -59.593072373979165,
@@ -1813,8 +1823,8 @@ function loadJSON() {
             "rightLeg_y": 0.7831906505209792,
             "rightLeg_z": 0.01
           }
-      },
-      "key40": {
+        },
+        "key40": {
           "0": {
             "P_high": 16.225375950436504,
             "P_X": -61.620670233736973,
@@ -2154,8 +2164,8 @@ function loadJSON() {
             "rightLeg_z": 0.01
           }
         },
-    },
-    "closed": false,
+      },
+      "closed": false,
       "folders": {
         "people": {
           "preset": "Default",
@@ -2187,459 +2197,463 @@ function loadJSON() {
           "closed": false,
           "folders": {}
         }
-     }
-  }
-}
-
-function onWindowResize() {
-  if(useGyro){
-    camera1.aspect = window.innerWidth / window.innerHeight;
-    camera1.updateProjectionMatrix();
-  }else {
-    camera.aspect = window.innerWidth / window.innerHeight;
-    camera.updateProjectionMatrix();
-  }
-  renderer.setSize(window.innerWidth, window.innerHeight);
-}
-
-function buildPart(colorName = 'white') {
-  let body = new THREE.Object3D();
-  var Cgeometry = new THREE.CylinderGeometry(2, 7, 15, 32);
-  let normalMat = new THREE.MeshNormalMaterial({
-    color: colorName,
-    transparent: true,
-    opacity: 0.64
-  });
-  let smilefaceMat = new THREE.MeshPhongMaterial(
-  {
-    color:0xffffff,
-    map: THREE.ImageUtils.loadTexture('marshmellow.png')
-  });
-  let skinMat = new THREE.MeshPhongMaterial(
-  {
-    color:0xffffff,
-    map: THREE.ImageUtils.loadTexture('skin.jpg')
-  });
-  
-  let skirtMat = new THREE.MeshPhongMaterial(
-  {
-    color:0xffffff,
-    map: THREE.ImageUtils.loadTexture('skirt_texture_short.png')
-  });
-    
-  var upbodyGeo = new THREE.CylinderGeometry(3, 2.5, 5, 32);
-  var material = new THREE.MeshPhongMaterial({color: 0xF7FE2E}); 
-  var wholeBody = new THREE.Mesh(upbodyGeo, skirtMat);
-  wholeBody.position.y = 7;
-    
-  var donwbodyGeo = new THREE.CylinderGeometry(2.5, 7, 10, 32);
-  wholeBody.updateMatrix();
-  donwbodyGeo.merge(wholeBody.geometry, wholeBody.matrix);
-  
-    
-  let bodyMesh = new THREE.Mesh(donwbodyGeo, skirtMat)
-  let body_shL = new THREE.Mesh(new THREE.SphereGeometry(2, 32, 32), skirtMat)
-  let body_shR = new THREE.Mesh(new THREE.SphereGeometry(2, 32, 32), skirtMat)
-  let headMesh = new THREE.Mesh(new THREE.SphereGeometry(3.5, 32, 32), smilefaceMat)
-  let neckMesh = new THREE.Mesh(new THREE.CylinderGeometry(1, 2, 2, 32), skinMat)
-
-  body.add(headMesh)
-  body.add(neckMesh)
-  body.add(bodyMesh)
-  body.add(body_shL)
-  body.add(body_shR)
-  headMesh.rotation.y = 6*Math.PI/4
-  headMesh.position.y = 19 // + high
-  neckMesh.position.y = 15 // + high
-  bodyMesh.position.y = 5.5 //+ high
-  body_shL.position.x = 3
-  body_shL.position.y = 13.5 //+ high
-  body_shR.position.x = -3
-  body_shR.position.y = 13.5 //+ high
-  //axis = new THREE.AxisHelper(5)
-  //body.add(axis)
-
-
-
-  let leftUpperArm = new THREE.Object3D()
-  upperArmMesh = new THREE.Mesh(new THREE.BoxGeometry(7, 1.5, 1.5), skinMat)
-  leftUpperArmjointMesh = new THREE.Mesh(new THREE.SphereGeometry(1, 32, 32), skinMat)
-  leftUpperArm.add(upperArmMesh)
-  leftUpperArm.add(leftUpperArmjointMesh)
-  leftUpperArmjointMesh.position.x = 6
-  upperArmMesh.position.x = 3
-  //leftUpperArm.add(new THREE.AxisHelper(5))
-  body.add(leftUpperArm);
-
-  let leftArm = new THREE.Object3D()
-  ArmMesh = new THREE.Mesh(new THREE.BoxGeometry(8, 1, 1), skinMat)
-  leftArmjointMesh = new THREE.Mesh(new THREE.SphereGeometry(1, 32, 32), skinMat)
-  leftArm.add(ArmMesh)
-  leftArm.add(leftArmjointMesh)
-  leftArmjointMesh.position.x = 8
-  ArmMesh.position.x = 4
-  //leftArm.add(new THREE.AxisHelper(5))
-
-  let rightUpperArm = new THREE.Object3D()
-  rightUpperArmMesh = new THREE.Mesh(new THREE.BoxGeometry(7, 1.5, 1.5), skinMat)
-  rightUpperArmjointMesh = new THREE.Mesh(new THREE.SphereGeometry(1, 32, 32), skinMat)
-  rightUpperArm.add(rightUpperArmMesh)
-  rightUpperArm.add(rightUpperArmjointMesh)
-  rightUpperArmjointMesh.position.x = 6
-  rightUpperArmMesh.position.x = 3
-  //rightUpperArm.add(new THREE.AxisHelper(-5))
-  body.add(rightUpperArm);
-
-  let rightArm = new THREE.Object3D()
-  ArmMesh = new THREE.Mesh(new THREE.BoxGeometry(8, 1, 1), skinMat)
-  rightArmjointMesh = new THREE.Mesh(new THREE.SphereGeometry(1, 32, 32), skinMat)
-  rightArm.add(ArmMesh)
-  rightArm.add(rightArmjointMesh)
-  rightArmjointMesh.position.x = 8
-  ArmMesh.position.x = 4
-  //rightArm.add(new THREE.AxisHelper(-5))
-
-  let leftUpperLeg = new THREE.Object3D()
-  upperLegMesh = new THREE.Mesh(new THREE.BoxGeometry(10, 2, 2), skinMat)
-  leftUpperLegjointMesh = new THREE.Mesh(new THREE.SphereGeometry(1.3, 32, 32), skinMat)
-  leftUpperLeg.add(leftUpperLegjointMesh)
-  leftUpperLegjointMesh.position.x = 7
-  leftUpperLeg.add(upperLegMesh)
-  upperLegMesh.position.x = 1.5
-  //leftUpperLeg.add(new THREE.AxisHelper(5))
-
-  let leftLeg = new THREE.Object3D()
-  LegMesh = new THREE.Mesh(new THREE.BoxGeometry(10, 1.5, 1.5), skinMat)
-  leftLegjointMesh = new THREE.Mesh(new THREE.BoxGeometry(1.5, 2, 5), skirtMat)
-  leftLeg.add(leftLegjointMesh)
-  leftLegjointMesh.position.x = 10
-  leftLegjointMesh.position.z = 2
-  leftLegJMesh = new THREE.Mesh(new THREE.SphereGeometry(1, 32, 32), skirtMat)
-  leftLeg.add(leftLegJMesh)
-  leftLegJMesh.position.x = 10
-  leftLeg.add(LegMesh)
-  LegMesh.position.x = 5
-  //leftLeg.add(new THREE.AxisHelper(5))
-
-  let rightUpperLeg = new THREE.Object3D()
-  upperLegMesh = new THREE.Mesh(new THREE.BoxGeometry(10, 2, 2), skinMat)
-  rightUpperLegjointMesh = new THREE.Mesh(new THREE.SphereGeometry(1.3, 32, 32), skinMat)
-  rightUpperLeg.add(rightUpperLegjointMesh)
-  rightUpperLegjointMesh.position.x = 7
-  rightUpperLeg.add(upperLegMesh)
-  upperLegMesh.position.x = 1.5
-  //rightUpperLeg.add(new THREE.AxisHelper(-5))
-
-  let rightLeg = new THREE.Object3D()
-  LegMesh = new THREE.Mesh(new THREE.BoxGeometry(10, 1.5, 1.5), skinMat)
-  rightLegjointMesh = new THREE.Mesh(new THREE.BoxGeometry(1.5, 2, 5), skirtMat)
-  rightLeg.add(rightLegjointMesh)
-  rightLegjointMesh.position.x = 10
-  rightLegjointMesh.position.z = 2
-  rightLegJMesh = new THREE.Mesh(new THREE.SphereGeometry(1, 32, 32), skirtMat)
-  rightLeg.add(rightLegJMesh)
-  rightLegJMesh.position.x = 10
-  rightLeg.add(LegMesh)
-  LegMesh.position.x = 5
-  //rightLeg.add(new THREE.AxisHelper(-5))
-
-  return [body, leftUpperArm, rightUpperArm, leftArm, rightArm, leftUpperLeg, rightUpperLeg, leftLeg, rightLeg];
-}
-
-function sleep(milliseconds) {
-  var start = new Date().getTime();
-  while (1)
-    if ((new Date().getTime() - start) > milliseconds) break;
-}
-function isNegNum(val){
-  if(val*-1 > 0){
-    return true;
-  }
-  else {
-    return false;
-  }
-}
-
-function animate() {
-  
-  ///*//for animation
-
-  let d = Math.floor(intI / speed);
-  if(d%2 == 0)angle = angle + 0.003;
-  else angle = angle+0.001;
-  var move = loadJSON().remembered['key' + d];
-  
-  parts[0].position.y = move[0].P_high;
-  parts[0].position.x = 60 * Math.cos(angle);//move[0].P_X;
-  parts[0].position.z = -60 * Math.sin(angle);//move[0].P_Z;
-  //console.log(60 * Math.cos(angle), -60 * Math.sin(angle));
-  parts[0].rotation.x = move[0].body_x;
-  parts[0].rotation.y = angle + Math.PI;//move[0].body_y;
-  parts[0].rotation.z = move[0].body_z;
-
-  parts[1].rotation.x = move[0].leftUpArm_x;
-  parts[1].rotation.y = move[0].leftUpArm_y;
-  parts[1].rotation.z = move[0].leftUpArm_z;
-
-  parts[2].rotation.x = move[0].rightUpArm_x;
-  parts[2].rotation.y = move[0].rightUpArm_y;
-  parts[2].rotation.z = move[0].rightUpArm_z;
-
-  parts[3].rotation.x = move[0].leftArm_x;
-  parts[3].rotation.y = move[0].leftArm_y;
-  parts[3].rotation.z = move[0].leftArm_z;
-
-  parts[4].rotation.x = move[0].rightArm_x;
-  parts[4].rotation.y = move[0].rightArm_y;
-  parts[4].rotation.z = move[0].rightArm_z;
-
-  parts[5].rotation.x = move[0].leftUpLeg_x;
-  parts[5].rotation.y = move[0].leftUpLeg_y;
-  parts[5].rotation.z = move[0].leftUpLeg_z;
-
-  parts[6].rotation.x = move[0].rightUpLeg_x;
-  parts[6].rotation.y = move[0].rightUpLeg_y;
-  parts[6].rotation.z = move[0].rightUpLeg_z;
-
-  parts[7].rotation.x = move[0].leftLeg_x;
-  parts[7].rotation.y = move[0].leftLeg_y;
-  parts[7].rotation.z = move[0].leftLeg_z;
-  
-  parts[8].rotation.x = move[0].rightLeg_x;
-  parts[8].rotation.y = move[0].rightLeg_y;
-  parts[8].rotation.z = move[0].rightLeg_z;
-
-  //footprint
-  let dt_footprint = clock_footprint.getDelta();
-  footprints.forEach (function (b) {b.update (dt_footprint)});
-  if(intI%40==0) {
-    var loader = new THREE.TextureLoader();
-    loader.setCrossOrigin ('');
-    let v_x = 60 * Math.cos(angle);
-    let v_z = -60 * Math.sin(angle);
-    let footprint_mono;
-    
-    if((intI/40)%2 == 0) {
-      let tex = loader.load ('Shoe-footprint.png');
-      tex.wrapS = THREE.RepeatWrapping;
-      tex.repeat.x = - 1;
-      footprint_mono = new THREE.Mesh (new THREE.PlaneGeometry (6,6), new THREE.MeshBasicMaterial({map: tex, alphaTest:0.5, transparent: true, side: THREE.DoubleSide}));
-
-      if(isNegNum(v_x) == true && isNegNum(v_z) == true) {
-        footprint_mono.position.x = v_x-3;
-        footprint_mono.position.z = v_z-3;
-        //console.log("***here case1");
-      }
-      else if(isNegNum(v_x) == false && isNegNum(v_z) == false){
-        footprint_mono.position.x = v_x+3;
-        footprint_mono.position.z = v_z+3;
-      }
-      else if(isNegNum(v_x) == true && isNegNum(v_z) == false) {
-        footprint_mono.position.x = v_x-3;
-        footprint_mono.position.z = v_z+3;
-        //console.log("***here case2");
-      }
-      else if(isNegNum(v_x) == false && isNegNum(v_z) == true){
-        footprint_mono.position.x = v_x+3;
-        footprint_mono.position.z = v_z-3;
       }
     }
-    else if((intI/40)%2 == 1) {
-      let tex = loader.load ('Shoe-footprint.png');
-      footprint_mono = new THREE.Mesh (new THREE.PlaneGeometry (6,6), new THREE.MeshLambertMaterial({map: tex, alphaTest:0.5, transparent: true, side: THREE.DoubleSide}));
-      
-      if(isNegNum(v_x) == true && isNegNum(v_z) == true) {
-        footprint_mono.position.x = v_x+3;
-        footprint_mono.position.z = v_z+3;
-        //console.log("***here case1");
-      }
-      else if(isNegNum(v_x) == false && isNegNum(v_z) == false){
-        footprint_mono.position.x = v_x-3;
-        footprint_mono.position.z = v_z-3;
-      }
-      else if(isNegNum(v_x) == true && isNegNum(v_z) == false) {
-        footprint_mono.position.x = v_x+3;
-        footprint_mono.position.z = v_z-3;
-        //console.log("***here case2");
-      }
-      else if(isNegNum(v_x) == false && isNegNum(v_z) == true){
-        footprint_mono.position.x = v_x-3;
-        footprint_mono.position.z = v_z+3;
-      }
-    }
-    footprint_mono.rotation.x = -Math.PI/2;
-    footprint_mono.rotation.z = angle - 2*Math.PI;
-    footprint_mono.name = "footprint"+footprint_num;
-    footprint_mono.position.y = 0.01;
-    footprint_mono.material.opacity = 1.0;
-    footprints.push(new CFootprint(footprint_mono.clone()));
-    footprint_num += 1;
   }
-  
-    
-  if (intI >= 49 * speed + (speed - 1)) intI = speed;
-  else intI += 1;
 
-  //*/
-  /*//for gui control
-  parts[0].position.y = gcontrol.P_high;
-  parts[0].position.x = gcontrol.P_X;
-  parts[0].position.z = gcontrol.P_Z;
+  function onWindowResize() {
+    if (useGyro) {
+      camera1.aspect = window.innerWidth / window.innerHeight;
+      camera1.updateProjectionMatrix();
+    } else {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+    }
+    renderer.setSize(window.innerWidth, window.innerHeight);
+  }
 
-  parts[0].rotation.x = gcontrol.body_x;
-  parts[0].rotation.y = gcontrol.body_y;
-  parts[0].rotation.z = gcontrol.body_z;
+  function buildPart(colorName = 'white') {
+    let body = new THREE.Object3D();
+    var Cgeometry = new THREE.CylinderGeometry(2, 7, 15, 32);
+    let normalMat = new THREE.MeshNormalMaterial({
+      color: colorName,
+      transparent: true,
+      opacity: 0.64
+    });
+    let smilefaceMat = new THREE.MeshPhongMaterial({
+      color: 0xffffff,
+      map: THREE.ImageUtils.loadTexture('marshmellow.png')
+    });
+    let skinMat = new THREE.MeshPhongMaterial({
+      color: 0xffffff,
+      map: THREE.ImageUtils.loadTexture('skin.jpg')
+    });
 
-  parts[1].rotation.x = gcontrol.leftUpArm_x;
-  parts[1].rotation.y = gcontrol.leftUpArm_y;
-  parts[1].rotation.z = gcontrol.leftUpArm_z;
+    let skirtMat = new THREE.MeshPhongMaterial({
+      color: 0xffffff,
+      map: THREE.ImageUtils.loadTexture('skirt_texture_short.png')
+    });
 
-  parts[2].rotation.x = gcontrol.rightUpArm_x;
-  parts[2].rotation.y = gcontrol.rightUpArm_y;
-  parts[2].rotation.z = gcontrol.rightUpArm_z;
+    var upbodyGeo = new THREE.CylinderGeometry(3, 2.5, 5, 32);
+    var material = new THREE.MeshPhongMaterial({
+      color: 0xF7FE2E
+    });
+    var wholeBody = new THREE.Mesh(upbodyGeo, skirtMat);
+    wholeBody.position.y = 7;
 
-  parts[3].rotation.x = gcontrol.leftArm_x;
-  parts[3].rotation.y = gcontrol.leftArm_y;
-  parts[3].rotation.z = gcontrol.leftArm_z;
+    var donwbodyGeo = new THREE.CylinderGeometry(2.5, 7, 10, 32);
+    wholeBody.updateMatrix();
+    donwbodyGeo.merge(wholeBody.geometry, wholeBody.matrix);
 
-  parts[4].rotation.x = gcontrol.rightArm_x;
-  parts[4].rotation.y = gcontrol.rightArm_y;
-  parts[4].rotation.z = gcontrol.rightArm_z;
 
-  parts[5].rotation.x = gcontrol.leftUpLeg_x;
-  parts[5].rotation.y = gcontrol.leftUpLeg_y;
-  parts[5].rotation.z = gcontrol.leftUpLeg_z;
+    let bodyMesh = new THREE.Mesh(donwbodyGeo, skirtMat)
+    let body_shL = new THREE.Mesh(new THREE.SphereGeometry(2, 32, 32), skirtMat)
+    let body_shR = new THREE.Mesh(new THREE.SphereGeometry(2, 32, 32), skirtMat)
+    let headMesh = new THREE.Mesh(new THREE.SphereGeometry(3.5, 32, 32), smilefaceMat)
+    let neckMesh = new THREE.Mesh(new THREE.CylinderGeometry(1, 2, 2, 32), skinMat)
 
-  parts[6].rotation.x = gcontrol.rightUpLeg_x;
-  parts[6].rotation.y = gcontrol.rightUpLeg_y;
-  parts[6].rotation.z = gcontrol.rightUpLeg_z;
+    body.add(headMesh)
+    body.add(neckMesh)
+    body.add(bodyMesh)
+    body.add(body_shL)
+    body.add(body_shR)
+    headMesh.rotation.y = 6 * Math.PI / 4
+    headMesh.position.y = 19 // + high
+    neckMesh.position.y = 15 // + high
+    bodyMesh.position.y = 5.5 //+ high
+    body_shL.position.x = 3
+    body_shL.position.y = 13.5 //+ high
+    body_shR.position.x = -3
+    body_shR.position.y = 13.5 //+ high
+    //axis = new THREE.AxisHelper(5)
+    //body.add(axis)
 
-  parts[7].rotation.x = gcontrol.leftLeg_x;
-  parts[7].rotation.y = gcontrol.leftLeg_y;
-  parts[7].rotation.z = gcontrol.leftLeg_z;
 
-  parts[8].rotation.x = gcontrol.rightLeg_x;
-  parts[8].rotation.y = gcontrol.rightLeg_y;
-  parts[8].rotation.z = gcontrol.rightLeg_z;
-  //*/
-  requestAnimationFrame(animate);
-  if (useGyro)
-  	renderer.render (scene, camera1)
-  else
-  	renderer.render (scene, camera)
-  //sleep(3000);
-}
 
-/*//for keyboard control
-function animate() {
-  keyboard.update();
+    let leftUpperArm = new THREE.Object3D()
+    upperArmMesh = new THREE.Mesh(new THREE.BoxGeometry(7, 1.5, 1.5), skinMat)
+    leftUpperArmjointMesh = new THREE.Mesh(new THREE.SphereGeometry(1, 32, 32), skinMat)
+    leftUpperArm.add(upperArmMesh)
+    leftUpperArm.add(leftUpperArmjointMesh)
+    leftUpperArmjointMesh.position.x = 6
+    upperArmMesh.position.x = 3
+    //leftUpperArm.add(new THREE.AxisHelper(5))
+    body.add(leftUpperArm);
 
-  if (keyboard.pressed('A')) {
-    if (keyboard.pressed('shift'))
-      parts[0].rotation.y += 0.01
+    let leftArm = new THREE.Object3D()
+    ArmMesh = new THREE.Mesh(new THREE.BoxGeometry(8, 1, 1), skinMat)
+    leftArmjointMesh = new THREE.Mesh(new THREE.SphereGeometry(1, 32, 32), skinMat)
+    leftArm.add(ArmMesh)
+    leftArm.add(leftArmjointMesh)
+    leftArmjointMesh.position.x = 8
+    ArmMesh.position.x = 4
+    //leftArm.add(new THREE.AxisHelper(5))
+
+    let rightUpperArm = new THREE.Object3D()
+    rightUpperArmMesh = new THREE.Mesh(new THREE.BoxGeometry(7, 1.5, 1.5), skinMat)
+    rightUpperArmjointMesh = new THREE.Mesh(new THREE.SphereGeometry(1, 32, 32), skinMat)
+    rightUpperArm.add(rightUpperArmMesh)
+    rightUpperArm.add(rightUpperArmjointMesh)
+    rightUpperArmjointMesh.position.x = 6
+    rightUpperArmMesh.position.x = 3
+    //rightUpperArm.add(new THREE.AxisHelper(-5))
+    body.add(rightUpperArm);
+
+    let rightArm = new THREE.Object3D()
+    ArmMesh = new THREE.Mesh(new THREE.BoxGeometry(8, 1, 1), skinMat)
+    rightArmjointMesh = new THREE.Mesh(new THREE.SphereGeometry(1, 32, 32), skinMat)
+    rightArm.add(ArmMesh)
+    rightArm.add(rightArmjointMesh)
+    rightArmjointMesh.position.x = 8
+    ArmMesh.position.x = 4
+    //rightArm.add(new THREE.AxisHelper(-5))
+
+    let leftUpperLeg = new THREE.Object3D()
+    upperLegMesh = new THREE.Mesh(new THREE.BoxGeometry(10, 2, 2), skinMat)
+    leftUpperLegjointMesh = new THREE.Mesh(new THREE.SphereGeometry(1.3, 32, 32), skinMat)
+    leftUpperLeg.add(leftUpperLegjointMesh)
+    leftUpperLegjointMesh.position.x = 7
+    leftUpperLeg.add(upperLegMesh)
+    upperLegMesh.position.x = 1.5
+    //leftUpperLeg.add(new THREE.AxisHelper(5))
+
+    let leftLeg = new THREE.Object3D()
+    LegMesh = new THREE.Mesh(new THREE.BoxGeometry(10, 1.5, 1.5), skinMat)
+    leftLegjointMesh = new THREE.Mesh(new THREE.BoxGeometry(1.5, 2, 5), skirtMat)
+    leftLeg.add(leftLegjointMesh)
+    leftLegjointMesh.position.x = 10
+    leftLegjointMesh.position.z = 2
+    leftLegJMesh = new THREE.Mesh(new THREE.SphereGeometry(1, 32, 32), skirtMat)
+    leftLeg.add(leftLegJMesh)
+    leftLegJMesh.position.x = 10
+    leftLeg.add(LegMesh)
+    LegMesh.position.x = 5
+    //leftLeg.add(new THREE.AxisHelper(5))
+
+    let rightUpperLeg = new THREE.Object3D()
+    upperLegMesh = new THREE.Mesh(new THREE.BoxGeometry(10, 2, 2), skinMat)
+    rightUpperLegjointMesh = new THREE.Mesh(new THREE.SphereGeometry(1.3, 32, 32), skinMat)
+    rightUpperLeg.add(rightUpperLegjointMesh)
+    rightUpperLegjointMesh.position.x = 7
+    rightUpperLeg.add(upperLegMesh)
+    upperLegMesh.position.x = 1.5
+    //rightUpperLeg.add(new THREE.AxisHelper(-5))
+
+    let rightLeg = new THREE.Object3D()
+    LegMesh = new THREE.Mesh(new THREE.BoxGeometry(10, 1.5, 1.5), skinMat)
+    rightLegjointMesh = new THREE.Mesh(new THREE.BoxGeometry(1.5, 2, 5), skirtMat)
+    rightLeg.add(rightLegjointMesh)
+    rightLegjointMesh.position.x = 10
+    rightLegjointMesh.position.z = 2
+    rightLegJMesh = new THREE.Mesh(new THREE.SphereGeometry(1, 32, 32), skirtMat)
+    rightLeg.add(rightLegJMesh)
+    rightLegJMesh.position.x = 10
+    rightLeg.add(LegMesh)
+    LegMesh.position.x = 5
+    //rightLeg.add(new THREE.AxisHelper(-5))
+
+    return [body, leftUpperArm, rightUpperArm, leftArm, rightArm, leftUpperLeg, rightUpperLeg, leftLeg, rightLeg];
+  }
+
+  function sleep(milliseconds) {
+    var start = new Date().getTime();
+    while (1)
+      if ((new Date().getTime() - start) > milliseconds) break;
+  }
+
+  function isNegNum(val) {
+    if (val * -1 > 0) {
+      return true;
+    } else {
+      return false;
+    }
+  }
+
+  function animate() {
+
+    ///*//for animation
+
+    let d = Math.floor(intI / speed);
+    if (d % 2 == 0) angle = angle + 0.003;
+    else angle = angle + 0.001;
+    var move = loadJSON().remembered['key' + d];
+
+    parts[0].position.y = move[0].P_high;
+    parts[0].position.x = 60 * Math.cos(angle); //move[0].P_X;
+    parts[0].position.z = -60 * Math.sin(angle); //move[0].P_Z;
+    //console.log(60 * Math.cos(angle), -60 * Math.sin(angle));
+    parts[0].rotation.x = move[0].body_x;
+    parts[0].rotation.y = angle + Math.PI; //move[0].body_y;
+    parts[0].rotation.z = move[0].body_z;
+
+    parts[1].rotation.x = move[0].leftUpArm_x;
+    parts[1].rotation.y = move[0].leftUpArm_y;
+    parts[1].rotation.z = move[0].leftUpArm_z;
+
+    parts[2].rotation.x = move[0].rightUpArm_x;
+    parts[2].rotation.y = move[0].rightUpArm_y;
+    parts[2].rotation.z = move[0].rightUpArm_z;
+
+    parts[3].rotation.x = move[0].leftArm_x;
+    parts[3].rotation.y = move[0].leftArm_y;
+    parts[3].rotation.z = move[0].leftArm_z;
+
+    parts[4].rotation.x = move[0].rightArm_x;
+    parts[4].rotation.y = move[0].rightArm_y;
+    parts[4].rotation.z = move[0].rightArm_z;
+
+    parts[5].rotation.x = move[0].leftUpLeg_x;
+    parts[5].rotation.y = move[0].leftUpLeg_y;
+    parts[5].rotation.z = move[0].leftUpLeg_z;
+
+    parts[6].rotation.x = move[0].rightUpLeg_x;
+    parts[6].rotation.y = move[0].rightUpLeg_y;
+    parts[6].rotation.z = move[0].rightUpLeg_z;
+
+    parts[7].rotation.x = move[0].leftLeg_x;
+    parts[7].rotation.y = move[0].leftLeg_y;
+    parts[7].rotation.z = move[0].leftLeg_z;
+
+    parts[8].rotation.x = move[0].rightLeg_x;
+    parts[8].rotation.y = move[0].rightLeg_y;
+    parts[8].rotation.z = move[0].rightLeg_z;
+
+    //footprint
+    let dt_footprint = clock_footprint.getDelta();
+    footprints.forEach(function(b) {
+      b.update(dt_footprint)
+    });
+    if (intI % 40 == 0) {
+      var loader = new THREE.TextureLoader();
+      loader.setCrossOrigin('');
+      let v_x = 60 * Math.cos(angle);
+      let v_z = -60 * Math.sin(angle);
+      let footprint_mono;
+
+      if ((intI / 40) % 2 == 0) {
+        let tex = loader.load('Shoe-footprint.png');
+        tex.wrapS = THREE.RepeatWrapping;
+        tex.repeat.x = -1;
+        footprint_mono = new THREE.Mesh(new THREE.PlaneGeometry(6, 6), new THREE.MeshBasicMaterial({
+          map: tex,
+          alphaTest: 0.5,
+          transparent: true,
+          side: THREE.DoubleSide
+        }));
+
+        if (isNegNum(v_x) == true && isNegNum(v_z) == true) {
+          footprint_mono.position.x = v_x - 3;
+          footprint_mono.position.z = v_z - 3;
+          //console.log("***here case1");
+        } else if (isNegNum(v_x) == false && isNegNum(v_z) == false) {
+          footprint_mono.position.x = v_x + 3;
+          footprint_mono.position.z = v_z + 3;
+        } else if (isNegNum(v_x) == true && isNegNum(v_z) == false) {
+          footprint_mono.position.x = v_x - 3;
+          footprint_mono.position.z = v_z + 3;
+          //console.log("***here case2");
+        } else if (isNegNum(v_x) == false && isNegNum(v_z) == true) {
+          footprint_mono.position.x = v_x + 3;
+          footprint_mono.position.z = v_z - 3;
+        }
+      } else if ((intI / 40) % 2 == 1) {
+        let tex = loader.load('Shoe-footprint.png');
+        footprint_mono = new THREE.Mesh(new THREE.PlaneGeometry(6, 6), new THREE.MeshLambertMaterial({
+          map: tex,
+          alphaTest: 0.5,
+          transparent: true,
+          side: THREE.DoubleSide
+        }));
+
+        if (isNegNum(v_x) == true && isNegNum(v_z) == true) {
+          footprint_mono.position.x = v_x + 3;
+          footprint_mono.position.z = v_z + 3;
+          //console.log("***here case1");
+        } else if (isNegNum(v_x) == false && isNegNum(v_z) == false) {
+          footprint_mono.position.x = v_x - 3;
+          footprint_mono.position.z = v_z - 3;
+        } else if (isNegNum(v_x) == true && isNegNum(v_z) == false) {
+          footprint_mono.position.x = v_x + 3;
+          footprint_mono.position.z = v_z - 3;
+          //console.log("***here case2");
+        } else if (isNegNum(v_x) == false && isNegNum(v_z) == true) {
+          footprint_mono.position.x = v_x - 3;
+          footprint_mono.position.z = v_z + 3;
+        }
+      }
+      footprint_mono.rotation.x = -Math.PI / 2;
+      footprint_mono.rotation.z = angle - 2 * Math.PI;
+      footprint_mono.name = "footprint" + footprint_num;
+      footprint_mono.position.y = 0.01;
+      footprint_mono.material.opacity = 1.0;
+      footprints.push(new CFootprint(footprint_mono.clone()));
+      footprint_num += 1;
+    }
+
+
+    if (intI >= 49 * speed + (speed - 1)) intI = speed;
+    else intI += 1;
+
+    //*/
+    /*//for gui control
+    parts[0].position.y = gcontrol.P_high;
+    parts[0].position.x = gcontrol.P_X;
+    parts[0].position.z = gcontrol.P_Z;
+
+    parts[0].rotation.x = gcontrol.body_x;
+    parts[0].rotation.y = gcontrol.body_y;
+    parts[0].rotation.z = gcontrol.body_z;
+
+    parts[1].rotation.x = gcontrol.leftUpArm_x;
+    parts[1].rotation.y = gcontrol.leftUpArm_y;
+    parts[1].rotation.z = gcontrol.leftUpArm_z;
+
+    parts[2].rotation.x = gcontrol.rightUpArm_x;
+    parts[2].rotation.y = gcontrol.rightUpArm_y;
+    parts[2].rotation.z = gcontrol.rightUpArm_z;
+
+    parts[3].rotation.x = gcontrol.leftArm_x;
+    parts[3].rotation.y = gcontrol.leftArm_y;
+    parts[3].rotation.z = gcontrol.leftArm_z;
+
+    parts[4].rotation.x = gcontrol.rightArm_x;
+    parts[4].rotation.y = gcontrol.rightArm_y;
+    parts[4].rotation.z = gcontrol.rightArm_z;
+
+    parts[5].rotation.x = gcontrol.leftUpLeg_x;
+    parts[5].rotation.y = gcontrol.leftUpLeg_y;
+    parts[5].rotation.z = gcontrol.leftUpLeg_z;
+
+    parts[6].rotation.x = gcontrol.rightUpLeg_x;
+    parts[6].rotation.y = gcontrol.rightUpLeg_y;
+    parts[6].rotation.z = gcontrol.rightUpLeg_z;
+
+    parts[7].rotation.x = gcontrol.leftLeg_x;
+    parts[7].rotation.y = gcontrol.leftLeg_y;
+    parts[7].rotation.z = gcontrol.leftLeg_z;
+
+    parts[8].rotation.x = gcontrol.rightLeg_x;
+    parts[8].rotation.y = gcontrol.rightLeg_y;
+    parts[8].rotation.z = gcontrol.rightLeg_z;
+    //*/
+    requestAnimationFrame(animate);
+    if (useGyro)
+      renderer.render(scene, camera1)
     else
-      parts[0].rotation.y -= 0.01
+      renderer.render(scene, camera)
+    //sleep(3000);
   }
 
-  if (keyboard.pressed('B')) {
-    if (keyboard.pressed('shift') && !keyboard.pressed('ctrl') && !keyboard.pressed('fn'))
-      parts[1].rotation.y += 0.01
-    else if (keyboard.pressed('Y'))
-      parts[1].rotation.y -= 0.01
-    if (keyboard.pressed('ctrl') && !keyboard.pressed('shift') && !keyboard.pressed('fn'))
-      parts[1].rotation.x += 0.01
-    else if (keyboard.pressed('X'))
-      parts[1].rotation.x -= 0.01
-    if (keyboard.pressed('alt') && !keyboard.pressed('shift') && !keyboard.pressed('ctrl'))
-      parts[1].rotation.z += 0.01
-    else if (keyboard.pressed('Z'))
-      parts[1].rotation.z -= 0.01
-  }
-	
-  if (keyboard.pressed('C')) {
-    if (keyboard.pressed('shift') && !keyboard.pressed('ctrl') && !keyboard.pressed('fn'))
-      parts[2].rotation.y += 0.01
-    else if (keyboard.pressed('Y'))
-      parts[2].rotation.y -= 0.01
-    if (keyboard.pressed('ctrl') && !keyboard.pressed('shift') && !keyboard.pressed('fn'))
-      parts[2].rotation.x += 0.01
-    else if (keyboard.pressed('X'))
-      parts[2].rotation.x -= 0.01
-    if (keyboard.pressed('alt') && !keyboard.pressed('shift') && !keyboard.pressed('ctrl'))
-      parts[2].rotation.z += 0.01
-    else if (keyboard.pressed('Z'))
-      parts[2].rotation.z -= 0.01
-  }
-  
-  if (keyboard.pressed('D')) {
-    if (keyboard.pressed('shift') && !keyboard.pressed('ctrl') && !keyboard.pressed('fn'))
-      parts[3].rotation.y += 0.01
-    else if (keyboard.pressed('Y'))
-      parts[3].rotation.y -= 0.01
-    if (keyboard.pressed('ctrl') && !keyboard.pressed('shift') && !keyboard.pressed('fn'))
-      parts[3].rotation.x += 0.01
-    else if (keyboard.pressed('X'))
-      parts[3].rotation.x -= 0.01
-    if (keyboard.pressed('alt') && !keyboard.pressed('shift') && !keyboard.pressed('ctrl'))
-      parts[3].rotation.z += 0.01
-    else if (keyboard.pressed('Z'))
-      parts[3].rotation.z -= 0.01
-  }
-  
-  
-  if (keyboard.pressed('E')) {
-    if (keyboard.pressed('shift') && !keyboard.pressed('ctrl') && !keyboard.pressed('fn'))
-      parts[4].rotation.y += 0.01
-    else if (keyboard.pressed('Y'))
-      parts[4].rotation.y -= 0.01
-    if (keyboard.pressed('ctrl') && !keyboard.pressed('shift') && !keyboard.pressed('fn'))
-      parts[4].rotation.x += 0.01
-    else if (keyboard.pressed('X'))
-      parts[4].rotation.x -= 0.01
-    if (keyboard.pressed('alt') && !keyboard.pressed('shift') && !keyboard.pressed('ctrl'))
-      parts[4].rotation.z += 0.01
-    else if (keyboard.pressed('Z'))
-      parts[4].rotation.z -= 0.01
-  }
-  
-  if (keyboard.pressed('F')) {
-    if (keyboard.pressed('shift') && !keyboard.pressed('ctrl') && !keyboard.pressed('fn'))
-      parts[5].rotation.y += 0.01
-    else if (keyboard.pressed('Y'))
-      parts[5].rotation.y -= 0.01
-    if (keyboard.pressed('ctrl') && !keyboard.pressed('shift') && !keyboard.pressed('fn'))
-      parts[5].rotation.x += 0.01
-    else if (keyboard.pressed('X'))
-      parts[5].rotation.x -= 0.01
-    if (keyboard.pressed('alt') && !keyboard.pressed('shift') && !keyboard.pressed('ctrl'))
-      parts[5].rotation.z += 0.01
-    else if (keyboard.pressed('Z'))
-      parts[5].rotation.z -= 0.01
-  }
-  if (keyboard.pressed('G')) {
-    if (keyboard.pressed('shift') && !keyboard.pressed('ctrl') && !keyboard.pressed('fn'))
-      parts[6].rotation.y += 0.01
-    else if (keyboard.pressed('Y'))
-      parts[6].rotation.y -= 0.01
-    if (keyboard.pressed('ctrl') && !keyboard.pressed('shift') && !keyboard.pressed('fn'))
-      parts[6].rotation.x += 0.01
-    else if (keyboard.pressed('X'))
-      parts[6].rotation.x -= 0.01
-    if (keyboard.pressed('alt') && !keyboard.pressed('shift') && !keyboard.pressed('ctrl'))
-      parts[6].rotation.z += 0.01
-    else if (keyboard.pressed('Z'))
-      parts[6].rotation.z -= 0.01
-  }
-  requestAnimationFrame(animate);
-  render();
-}
+  /*//for keyboard control
+  function animate() {
+    keyboard.update();
 
-function render() {
-  renderer.render(scene, camera);
-}
-*/
-// important to add this 
-// in jsfiddle!
-window.focus();
+    if (keyboard.pressed('A')) {
+      if (keyboard.pressed('shift'))
+        parts[0].rotation.y += 0.01
+      else
+        parts[0].rotation.y -= 0.01
+    }
+
+    if (keyboard.pressed('B')) {
+      if (keyboard.pressed('shift') && !keyboard.pressed('ctrl') && !keyboard.pressed('fn'))
+        parts[1].rotation.y += 0.01
+      else if (keyboard.pressed('Y'))
+        parts[1].rotation.y -= 0.01
+      if (keyboard.pressed('ctrl') && !keyboard.pressed('shift') && !keyboard.pressed('fn'))
+        parts[1].rotation.x += 0.01
+      else if (keyboard.pressed('X'))
+        parts[1].rotation.x -= 0.01
+      if (keyboard.pressed('alt') && !keyboard.pressed('shift') && !keyboard.pressed('ctrl'))
+        parts[1].rotation.z += 0.01
+      else if (keyboard.pressed('Z'))
+        parts[1].rotation.z -= 0.01
+    }
+  	
+    if (keyboard.pressed('C')) {
+      if (keyboard.pressed('shift') && !keyboard.pressed('ctrl') && !keyboard.pressed('fn'))
+        parts[2].rotation.y += 0.01
+      else if (keyboard.pressed('Y'))
+        parts[2].rotation.y -= 0.01
+      if (keyboard.pressed('ctrl') && !keyboard.pressed('shift') && !keyboard.pressed('fn'))
+        parts[2].rotation.x += 0.01
+      else if (keyboard.pressed('X'))
+        parts[2].rotation.x -= 0.01
+      if (keyboard.pressed('alt') && !keyboard.pressed('shift') && !keyboard.pressed('ctrl'))
+        parts[2].rotation.z += 0.01
+      else if (keyboard.pressed('Z'))
+        parts[2].rotation.z -= 0.01
+    }
+    
+    if (keyboard.pressed('D')) {
+      if (keyboard.pressed('shift') && !keyboard.pressed('ctrl') && !keyboard.pressed('fn'))
+        parts[3].rotation.y += 0.01
+      else if (keyboard.pressed('Y'))
+        parts[3].rotation.y -= 0.01
+      if (keyboard.pressed('ctrl') && !keyboard.pressed('shift') && !keyboard.pressed('fn'))
+        parts[3].rotation.x += 0.01
+      else if (keyboard.pressed('X'))
+        parts[3].rotation.x -= 0.01
+      if (keyboard.pressed('alt') && !keyboard.pressed('shift') && !keyboard.pressed('ctrl'))
+        parts[3].rotation.z += 0.01
+      else if (keyboard.pressed('Z'))
+        parts[3].rotation.z -= 0.01
+    }
+    
+    
+    if (keyboard.pressed('E')) {
+      if (keyboard.pressed('shift') && !keyboard.pressed('ctrl') && !keyboard.pressed('fn'))
+        parts[4].rotation.y += 0.01
+      else if (keyboard.pressed('Y'))
+        parts[4].rotation.y -= 0.01
+      if (keyboard.pressed('ctrl') && !keyboard.pressed('shift') && !keyboard.pressed('fn'))
+        parts[4].rotation.x += 0.01
+      else if (keyboard.pressed('X'))
+        parts[4].rotation.x -= 0.01
+      if (keyboard.pressed('alt') && !keyboard.pressed('shift') && !keyboard.pressed('ctrl'))
+        parts[4].rotation.z += 0.01
+      else if (keyboard.pressed('Z'))
+        parts[4].rotation.z -= 0.01
+    }
+    
+    if (keyboard.pressed('F')) {
+      if (keyboard.pressed('shift') && !keyboard.pressed('ctrl') && !keyboard.pressed('fn'))
+        parts[5].rotation.y += 0.01
+      else if (keyboard.pressed('Y'))
+        parts[5].rotation.y -= 0.01
+      if (keyboard.pressed('ctrl') && !keyboard.pressed('shift') && !keyboard.pressed('fn'))
+        parts[5].rotation.x += 0.01
+      else if (keyboard.pressed('X'))
+        parts[5].rotation.x -= 0.01
+      if (keyboard.pressed('alt') && !keyboard.pressed('shift') && !keyboard.pressed('ctrl'))
+        parts[5].rotation.z += 0.01
+      else if (keyboard.pressed('Z'))
+        parts[5].rotation.z -= 0.01
+    }
+    if (keyboard.pressed('G')) {
+      if (keyboard.pressed('shift') && !keyboard.pressed('ctrl') && !keyboard.pressed('fn'))
+        parts[6].rotation.y += 0.01
+      else if (keyboard.pressed('Y'))
+        parts[6].rotation.y -= 0.01
+      if (keyboard.pressed('ctrl') && !keyboard.pressed('shift') && !keyboard.pressed('fn'))
+        parts[6].rotation.x += 0.01
+      else if (keyboard.pressed('X'))
+        parts[6].rotation.x -= 0.01
+      if (keyboard.pressed('alt') && !keyboard.pressed('shift') && !keyboard.pressed('ctrl'))
+        parts[6].rotation.z += 0.01
+      else if (keyboard.pressed('Z'))
+        parts[6].rotation.z -= 0.01
+    }
+    requestAnimationFrame(animate);
+    render();
+  }
+
+  function render() {
+    renderer.render(scene, camera);
+  }
+  */
+  // important to add this 
+  // in jsfiddle!
+  window.focus();
 
 </script>

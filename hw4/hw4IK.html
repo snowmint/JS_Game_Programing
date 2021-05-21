@@ -1,250 +1,253 @@
 <head>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/107/three.min.js"></script>
-  <script src="https://threejs.org/examples/js/controls/OrbitControls.js"></script>
+  <!--script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/107/three.min.js"></script>
+  <script src="https://threejs.org/examples/js/controls/OrbitControls.js"></script-->
+  <script src="../three.js/build/three.min.js"></script>
+  <script src="../three.js/examples/js/loaders/MTLLoader.js"></script>
+  <script src="../three.js/examples/js/loaders/OBJLoader.js"></script>
+  <script src="../three.js/examples/js/controls/OrbitControls.js"></script>
   <script src="https://jyunming-chen.github.io/tutsplus/js/KeyboardState.js"></script>
   <script src="https://raw.githack.com/mrdoob/three.js/dev/examples/js/misc/Gyroscope.js"></script>
   <script src="./ccdsys.js"></script>
   <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/dat-gui/0.5/dat.gui.min.js"></script>
-  
-  
+
+
   <style>
-  #info {
-    position: absolute;
-    top: 0px;
-    width: 100%;
-    padding: 10px;
-    text-align: center;
-    color: #ffffff
-  }
+    #info {
+      position: absolute;
+      top: 0px;
+      width: 100%;
+      padding: 10px;
+      text-align: center;
+      color: #ffffff
+    }
 
-  body {
-    /*background-image: linear-gradient(to top, #a18cd1 0%, #fbc2eb 100%);*/
-    background-image: linear-gradient(to top, #9795f0 0%, #fbc8d4 100%);
-    margin: 0px;
-    overflow: hidden;
-  }
+    body {
+      /*background-image: linear-gradient(to top, #a18cd1 0%, #fbc2eb 100%);*/
+      background-image: linear-gradient(to top, #9795f0 0%, #fbc8d4 100%);
+      margin: 0px;
+      overflow: hidden;
+    }
 
-  button {
-    border: none;
-    color: white;
-    background-color: Transparent;
-    border-radius: 8px;
-    transition-duration: 0.4s;
-    /* Safari */
-    transition-duration: 0.4s;
-    border: 1px solid #ffffff;
-  }
+    button {
+      border: none;
+      color: white;
+      background-color: Transparent;
+      border-radius: 8px;
+      transition-duration: 0.4s;
+      /* Safari */
+      transition-duration: 0.4s;
+      border: 1px solid #ffffff;
+    }
 
-  button:hover {
-    border: 1px solid #96B9F2;
-    background-color: Transparent;
-    color: white;
-    box-shadow: 0 5px 20px 0 rgba( 0, 0, 0, 0.54), 0 17px 50px 0 rgba(0, 0, 0, 0.19);
-  }
+    button:hover {
+      border: 1px solid #96B9F2;
+      background-color: Transparent;
+      color: white;
+      box-shadow: 0 5px 20px 0 rgba(0, 0, 0, 0.54), 0 17px 50px 0 rgba(0, 0, 0, 0.19);
+    }
+
   </style>
 </head>
+
 <body>
-  <div id = "info">
+  <div id="info">
     <div id="ti" style="top:30px">Biped walking</div>
     <button id="play" style="width:20%">Stop</button>
   </div>
   <script>
-    
     var biped = {
       leftthetaGroin: 0.31,
       leftthetaKnee: 0.6,
       rightthetaGroin: 0.31,
-      rightthetaKnee: 0.6, 
+      rightthetaKnee: 0.6,
       target: new THREE.Vector3(),
       target2: new THREE.Vector3(),
 
       init: function() {
         let body = new THREE.Object3D();
-        
+
         var Cgeometry = new THREE.CylinderGeometry(1.5, 3, 6, 32);
-        var CgeometryR = new THREE.CylinderGeometry(2,1.5, 4, 32);
+        var CgeometryR = new THREE.CylinderGeometry(2, 1.5, 4, 32);
         let mat = new THREE.MeshNormalMaterial();
-        let skinMat = new THREE.MeshPhongMaterial(
-        {
-          color:0xffffff,
+        let skinMat = new THREE.MeshPhongMaterial({
+          color: 0xffffff,
           map: THREE.ImageUtils.loadTexture('skin.jpg')
         });
-        let skirtMat = new THREE.MeshPhongMaterial(
-        {
-          color:0xffffff,
+        let skirtMat = new THREE.MeshPhongMaterial({
+          color: 0xffffff,
           map: THREE.ImageUtils.loadTexture('skirt_texture_short.png')
         });
-        let smilefaceMat = new THREE.MeshPhongMaterial(
-        {
-          color:0xffffff,
+        let smilefaceMat = new THREE.MeshPhongMaterial({
+          color: 0xffffff,
           map: THREE.ImageUtils.loadTexture('marshmellow.png')
         });
-        
-        
+
+
         let bodyMesh = new THREE.Mesh(Cgeometry, skirtMat);
         let brestMesh = new THREE.Mesh(CgeometryR, skirtMat);
         brestMesh.position.y = 6;
         bodyMesh.position.y = 2.5;
         brestMesh.position.x = 0.5;
         bodyMesh.position.x = 0.5;
-        
+
         ////////////////////////////////////
-        
-        let neck = new THREE.Mesh (new THREE.CylinderGeometry(0.3, 0.7, 2), skinMat);
+
+        let neck = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.7, 2), skinMat);
         neck.position.y = 9;
         neck.position.x = 0.5;
-        
-        let head = new THREE.Mesh (new THREE.SphereGeometry(1.8, 10, 10), smilefaceMat);
+
+        let head = new THREE.Mesh(new THREE.SphereGeometry(1.8, 10, 10), smilefaceMat);
         head.position.y = 10.5;
         head.position.x = 0.5;
-        
+
         ////////////////////////////////////left arm
-        let L3 = L1 * 0.8, L4 = L2 * 0.8;
-        
+        let L3 = L1 * 0.8,
+          L4 = L2 * 0.8;
+
         this.leftuparm = new THREE.Object3D();
-        let leftuparmMesh = new THREE.Mesh (new THREE.BoxGeometry(0.8, L4, 0.8), skinMat);
-        this.leftuparm.add (leftuparmMesh);
-        leftuparmMesh.rotation.x = -Math.PI/12;
-        leftuparmMesh.position.y = -L4/2+7.5;
+        let leftuparmMesh = new THREE.Mesh(new THREE.BoxGeometry(0.8, L4, 0.8), skinMat);
+        this.leftuparm.add(leftuparmMesh);
+        leftuparmMesh.rotation.x = -Math.PI / 12;
+        leftuparmMesh.position.y = -L4 / 2 + 7.5;
         leftuparmMesh.position.z = 2.7;
 
         let leftarm = new THREE.Object3D()
-        let leftarmMesh = new THREE.Mesh (new THREE.BoxGeometry(0.6, L3, 0.8), skinMat);
-        leftarm.add (leftarmMesh);
+        let leftarmMesh = new THREE.Mesh(new THREE.BoxGeometry(0.6, L3, 0.8), skinMat);
+        leftarm.add(leftarmMesh);
         leftarmMesh.position.y = -L3;
         leftarm.position.y = -L4;
-        
+
         let leftshoulder = new THREE.Mesh(new THREE.SphereGeometry(1, 32, 32), skirtMat);
-        leftshoulder.position.y = L3/2;
-        
+        leftshoulder.position.y = L3 / 2;
+
         let leftElbow = new THREE.Mesh(new THREE.SphereGeometry(0.6, 32, 32), skinMat);
-        leftElbow.position.y = -L3/2;
-        
+        leftElbow.position.y = -L3 / 2;
+
         let leftHand = new THREE.Mesh(new THREE.SphereGeometry(0.8, 32, 32), skinMat);
-        leftHand.position.y = -L3/2;
-        
+        leftHand.position.y = -L3 / 2;
+
         ////////////////////////////////////end left arm
-        
+
         ////////////////////////////////////right arm
         this.rightuparm = new THREE.Object3D();
-        let rightuparmMesh = new THREE.Mesh (new THREE.BoxGeometry(0.8, L4, 0.8), skinMat);
-        this.rightuparm.add (rightuparmMesh);
-        rightuparmMesh.rotation.x = Math.PI/12;
-        rightuparmMesh.position.y = -L4/2+7.5;
+        let rightuparmMesh = new THREE.Mesh(new THREE.BoxGeometry(0.8, L4, 0.8), skinMat);
+        this.rightuparm.add(rightuparmMesh);
+        rightuparmMesh.rotation.x = Math.PI / 12;
+        rightuparmMesh.position.y = -L4 / 2 + 7.5;
         rightuparmMesh.position.z = -2.7;
 
         let rightarm = new THREE.Object3D()
-        let rightarmMesh = new THREE.Mesh (new THREE.BoxGeometry(0.6, L3, 0.8), skinMat);
-        rightarm.add (rightarmMesh);
+        let rightarmMesh = new THREE.Mesh(new THREE.BoxGeometry(0.6, L3, 0.8), skinMat);
+        rightarm.add(rightarmMesh);
         rightarmMesh.position.y = -L3;
         rightarm.position.y = -L4;
-        
+
         let rightshoulder = new THREE.Mesh(new THREE.SphereGeometry(1, 32, 32), skirtMat);
-        rightshoulder.position.y = L3/2;
-        
+        rightshoulder.position.y = L3 / 2;
+
         let rightElbow = new THREE.Mesh(new THREE.SphereGeometry(0.6, 32, 32), skinMat);
-        rightElbow.position.y = -L3/2;
-        
+        rightElbow.position.y = -L3 / 2;
+
         let rightHand = new THREE.Mesh(new THREE.SphereGeometry(0.8, 32, 32), skinMat);
-        rightHand.position.y = -L3/2;
-        
+        rightHand.position.y = -L3 / 2;
+
         ////////////////////////////////////end right arm
 
         this.leftthigh = new THREE.Object3D();
-        let leftthighMesh = new THREE.Mesh (new THREE.BoxGeometry(1, L2, 1), skinMat);
-        this.leftthigh.add (leftthighMesh);
-        leftthighMesh.position.y = -L2/2;
+        let leftthighMesh = new THREE.Mesh(new THREE.BoxGeometry(1, L2, 1), skinMat);
+        this.leftthigh.add(leftthighMesh);
+        leftthighMesh.position.y = -L2 / 2;
         leftthighMesh.position.z = 1;
 
         this.leftleg = new THREE.Object3D()
-        let leftlegMesh = new THREE.Mesh (new THREE.BoxGeometry(1, L1, 1), skinMat);
-        this.leftleg.add (leftlegMesh);
-        leftlegMesh.position.y = -L1/2;
+        let leftlegMesh = new THREE.Mesh(new THREE.BoxGeometry(1, L1, 1), skinMat);
+        this.leftleg.add(leftlegMesh);
+        leftlegMesh.position.y = -L1 / 2;
         leftlegMesh.position.z = 1;
         this.leftleg.position.y = -L2;
 
         this.rightthigh = new THREE.Object3D();
-        let rightthighMesh = new THREE.Mesh (new THREE.BoxGeometry(1, L2, 1), skinMat);
-        this.rightthigh.add (rightthighMesh);
-        rightthighMesh.position.y = -L2/2;
+        let rightthighMesh = new THREE.Mesh(new THREE.BoxGeometry(1, L2, 1), skinMat);
+        this.rightthigh.add(rightthighMesh);
+        rightthighMesh.position.y = -L2 / 2;
         rightthighMesh.position.z = -1;
 
         this.rightleg = new THREE.Object3D()
-        let rightlegMesh = new THREE.Mesh (new THREE.BoxGeometry(1, L1, 1), skinMat)
-        this.rightleg.add (rightlegMesh)
-        rightlegMesh.position.y = -L1/2
+        let rightlegMesh = new THREE.Mesh(new THREE.BoxGeometry(1, L1, 1), skinMat)
+        this.rightleg.add(rightlegMesh)
+        rightlegMesh.position.y = -L1 / 2
         rightlegMesh.position.z = -1;
         this.rightleg.position.y = -L2;
 
         this.torso = new THREE.Object3D();
-        let torsoMesh = new THREE.Mesh (new THREE.BoxGeometry(1, Lh, 1), skinMat)
-        this.torso.add (torsoMesh);
-        torsoMesh.position.y = Lh/2;
+        let torsoMesh = new THREE.Mesh(new THREE.BoxGeometry(1, Lh, 1), skinMat)
+        this.torso.add(torsoMesh);
+        torsoMesh.position.y = Lh / 2;
 
         let leftKnee = new THREE.Mesh(new THREE.SphereGeometry(0.7, 32, 32), skinMat);
         leftKnee.position.z = 1;
         let rightKnee = new THREE.Mesh(new THREE.SphereGeometry(0.7, 32, 32), skinMat);
         rightKnee.position.z = -1;
-        
+
         let rightfeet = new THREE.Object3D()
-        let rightfeetMesh = new THREE.Mesh (new THREE.BoxGeometry(1, 3, 1), skirtMat)
-        rightfeet.add (rightfeetMesh);
-        rightfeetMesh.rotation.z = -Math.PI/2;
+        let rightfeetMesh = new THREE.Mesh(new THREE.BoxGeometry(1, 3, 1), skirtMat)
+        rightfeet.add(rightfeetMesh);
+        rightfeetMesh.rotation.z = -Math.PI / 2;
         rightfeetMesh.position.x = 1;
         rightfeet.position.y = -L2;
         rightfeet.position.z = -1;
 
         let leftfeet = new THREE.Object3D()
-        let leftfeetMesh = new THREE.Mesh (new THREE.BoxGeometry(1, 3, 1), skirtMat)
-        leftfeet.add (leftfeetMesh);
-        leftfeetMesh.rotation.z = -Math.PI/2;
+        let leftfeetMesh = new THREE.Mesh(new THREE.BoxGeometry(1, 3, 1), skirtMat)
+        leftfeet.add(leftfeetMesh);
+        leftfeetMesh.rotation.z = -Math.PI / 2;
         leftfeetMesh.position.x = 1;
         leftfeet.position.y = -L2;
         leftfeet.position.z = 1;
-        
+
         let leftAnkle = new THREE.Mesh(new THREE.SphereGeometry(0.8, 6, 6), skirtMat);
         leftAnkle.position.z = 1;
         leftAnkle.position.y = -L2;
-        
+
         let rightAnkle = new THREE.Mesh(new THREE.SphereGeometry(0.8, 6, 6), skirtMat);
         rightAnkle.position.z = -1;
         rightAnkle.position.y = -L2;
-        
-        body.add (this.torso);
-        body.add (neck, head);
-        body.add (bodyMesh, brestMesh);
-        
-        
+
+        body.add(this.torso);
+        body.add(neck, head);
+        body.add(bodyMesh, brestMesh);
+
+
         leftuparmMesh.add(leftarmMesh);
         leftuparmMesh.add(leftshoulder);
         leftuparmMesh.add(leftElbow);
         leftarmMesh.add(leftHand);
-        body.add (this.leftuparm);
-        
+        body.add(this.leftuparm);
+
         rightuparmMesh.add(rightarmMesh);
         rightuparmMesh.add(rightshoulder);
         rightuparmMesh.add(rightElbow);
         rightarmMesh.add(rightHand);
-        body.add (this.rightuparm);
-        
-        
-        body.add (this.leftthigh);
-        this.leftthigh.add (this.leftleg);
-        this.leftleg.add (leftKnee);
-        this.leftleg.add (leftfeet);
-        this.leftleg.add (leftAnkle);
-        
-        body.add (this.rightthigh)
-        this.rightthigh.add (this.rightleg)
-        this.rightleg.add (rightKnee);
-        this.rightleg.add (rightfeet);
-        this.rightleg.add (rightAnkle);
-        
-        return body;
-        },
+        body.add(this.rightuparm);
 
-      update: function (theta, theta2) {
+
+        body.add(this.leftthigh);
+        this.leftthigh.add(this.leftleg);
+        this.leftleg.add(leftKnee);
+        this.leftleg.add(leftfeet);
+        this.leftleg.add(leftAnkle);
+
+        body.add(this.rightthigh)
+        this.rightthigh.add(this.rightleg)
+        this.rightleg.add(rightKnee);
+        this.rightleg.add(rightfeet);
+        this.rightleg.add(rightAnkle);
+
+        return body;
+      },
+
+      update: function(theta, theta2) {
         //console.log (theta, theta2);
         this.rightthetaGroin = theta2[0];
         this.rightthetaKnee = theta2[1];
@@ -261,28 +264,38 @@
     const L2 = 5.2
     const L1 = 4.8
     const Lh = 3.3
-    var Hh = 9.3  // tunable ...
+    var Hh = 9.3 // tunable ...
     const Hr = 0.6;
     var Ts = 1;
     const Fc = 1.0;
-    var Vf = LS/Ts;
+    var Vf = LS / Ts;
     var gcontrols; // for dat-gui
-    
+
     var gyro;
     var useGyro = true;
 
     var body, body2;
-    var bodyball = new THREE.Mesh(new THREE.SphereGeometry(0.3, 32, 32, 20), new THREE.MeshBasicMaterial({color:'white'}));
-    var leftfootball = new THREE.Mesh(new THREE.SphereGeometry(0.3, 32, 32, 20), new THREE.MeshBasicMaterial({color:'green'}));
-    var rightfootball = new THREE.Mesh(new THREE.SphereGeometry(0.3, 32, 32, 20), new THREE.MeshBasicMaterial({color:'red'}));
-    
-    var lefthandball = new THREE.Mesh(new THREE.SphereGeometry(0.3, 32, 32, 20), new THREE.MeshBasicMaterial({color:'green'}));
-    var righthandball = new THREE.Mesh(new THREE.SphereGeometry(0.3, 32, 32, 20), new THREE.MeshBasicMaterial({color:'red'}));
+    var bodyball = new THREE.Mesh(new THREE.SphereGeometry(0.3, 32, 32, 20), new THREE.MeshBasicMaterial({
+      color: 'white'
+    }));
+    var leftfootball = new THREE.Mesh(new THREE.SphereGeometry(0.3, 32, 32, 20), new THREE.MeshBasicMaterial({
+      color: 'green'
+    }));
+    var rightfootball = new THREE.Mesh(new THREE.SphereGeometry(0.3, 32, 32, 20), new THREE.MeshBasicMaterial({
+      color: 'red'
+    }));
+
+    var lefthandball = new THREE.Mesh(new THREE.SphereGeometry(0.3, 32, 32, 20), new THREE.MeshBasicMaterial({
+      color: 'green'
+    }));
+    var righthandball = new THREE.Mesh(new THREE.SphereGeometry(0.3, 32, 32, 20), new THREE.MeshBasicMaterial({
+      color: 'red'
+    }));
     var clock = new THREE.Clock();
-    
-    var leftpos = [0,0];
-    var rightpos = [LS,0];
-    var bodypos = [LS/2,0];
+
+    var leftpos = [0, 0];
+    var rightpos = [LS, 0];
+    var bodypos = [LS / 2, 0];
     var cumtime = 0;
     var nowTime = clock.getElapsedTime();
     var stopkey = false;
@@ -303,17 +316,17 @@
     });
     init();
     animate();
-    
+
     function loadCubemap() {
       var path = "./yuhi/";
       var format = ".bmp";
       var urls = [
-              path + 'posx' + format, path + 'negx' + format,
-              path + 'posy' + format, path + 'negy' + format,
-              path + 'posz' + format, path + 'negz' + format
-          ];
+        path + 'posx' + format, path + 'negx' + format,
+        path + 'posy' + format, path + 'negy' + format,
+        path + 'posz' + format, path + 'negz' + format
+      ];
       var loadercube = new THREE.CubeTextureLoader();
-      loadercube.setCrossOrigin ('');
+      loadercube.setCrossOrigin('');
       var cubeMap = loadercube.load(urls);
       var cubeMap = loadercube.load(urls);
       cubeMap.format = THREE.RGBFormat;
@@ -321,8 +334,8 @@
       return cubeMap;
     }
 
-    function fk (theta, joints) {  // all memory assumed in place
-      joints[0].set (0,0,0);
+    function fk(theta, joints) { // all memory assumed in place
+      joints[0].set(0, 0, 0);
 
       var localzero = new THREE.Vector3(0, 0, 0);
       var m = new THREE.Matrix4();
@@ -340,16 +353,16 @@
 
     function init() {
       scene = new THREE.Scene();
-      
+
       var cubeMap = loadCubemap();
       scene.background = cubeMap;
 
       camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 1, 1000);
       camera.position.z = 50;
-      
+
       //var gridXZ = new THREE.GridHelper(200, 20, 'red', 'white');
       //scene.add(gridXZ);
-      
+
       light = new THREE.PointLight(0x474747);
       light.position.set(0, 50, 0);
       scene.add(light);
@@ -357,7 +370,9 @@
       AbLight.position.set(0, 100, 0);
       scene.add(AbLight);
 
-      renderer = new THREE.WebGLRenderer({alpha: true});
+      renderer = new THREE.WebGLRenderer({
+        alpha: true
+      });
       renderer.setSize(window.innerWidth, window.innerHeight);
 
       let controls = new THREE.OrbitControls(camera, renderer.domElement);
@@ -366,12 +381,12 @@
       controls.screenSpacePanning = false;
       controls.minDistance = 10;
       controls.maxDistance = 600;
-      controls.maxPolarAngle = (Math.PI-0.1) / 2;
+      controls.maxPolarAngle = (Math.PI - 0.1) / 2;
 
       document.body.appendChild(renderer.domElement); ///////////////////////////////////////////////////////////
       scene.add(bodyball, leftfootball, rightfootball);
       scene.add(lefthandball, righthandball);
-      
+
       ////////////////////////////////
       gcontrol = { //new function()
         Vf: 4.5,
@@ -382,40 +397,46 @@
       });
       gui.domElement.id = 'gui';
       gui.remember(gcontrol);
-      
+
       var control_Vf = gui.addFolder('speed_control');
       control_Vf.add(gcontrol, 'Vf', 2.5, 12.7);
-      
+
       //////// floor
-      let map =  new THREE.TextureLoader().load("./floor_texture.jpg");
+      let map = new THREE.TextureLoader().load("./floor_texture.jpg");
       map.repeat.set(100, 100);
       map.wrapS = THREE.RepeatWrapping;
       map.wrapT = THREE.RepeatWrapping;
-      let planeGeo = new THREE.PlaneGeometry(10000,10000);
-      planeGeo.faceVertexUvs[1] = planeGeo.faceVertexUvs[0];
-      let planeMat = new THREE.MeshPhongMaterial({color:0xffffff, side:THREE.DoubleSide, emissive: 0x111111,map:map});
-      let plane = new THREE.Mesh(planeGeo,planeMat);
+      let planeGeo = new THREE.PlaneGeometry(10000, 10000);
+      //planeGeo.faceVertexUvs[1] = planeGeo.faceVertexUvs[0];
+      let planeMat = new THREE.MeshPhongMaterial({
+        color: 0xffffff,
+        side: THREE.DoubleSide,
+        emissive: 0x111111,
+        map: map
+      });
+      let plane = new THREE.Mesh(planeGeo, planeMat);
       plane.rotation.x = -Math.PI / 2;
       plane.position.y = -2;
       scene.add(plane);
       ////////floor end
-      
-      body = biped.init();
-      scene.add (body);
-      gyro = new THREE.Gyroscope();
-      scene.add (gyro)
-      gyro.add (camera);
-      body.add (gyro);
 
-      biped.ccdSys = new CCDSys (fk);
-      biped.ccdSys.setCCDAxis (new THREE.Vector3(0,0,1), 0, -Math.PI/2, Math.PI/2)
-      biped.ccdSys.setCCDAxis (new THREE.Vector3(0,0,1), 1, -Math.PI, -1e-3)
+      body = biped.init();
+      scene.add(body);
+      gyro = new THREE.Gyroscope();
+      scene.add(gyro)
+      gyro.add(camera);
+      body.add(gyro);
+
+      biped.ccdSys = new CCDSys(fk);
+      biped.ccdSys.setCCDAxis(new THREE.Vector3(0, 0, 1), 0, -Math.PI / 2, Math.PI / 2)
+      biped.ccdSys.setCCDAxis(new THREE.Vector3(0, 0, 1), 1, -Math.PI, -1e-3)
     }
+
     function loadJSON() {
       return {
         "preset": "key1",
         "remembered": {
-            "key1": {
+          "key1": {
             "0": {
               "Vf": 4.5,
             }
@@ -423,52 +444,52 @@
         }
       }
     }
-          
-    function trackers(tt) {
-       var body = [LS/2+LS*tt/Ts, Hh - Hr/2*Math.cos(2*Math.PI*tt/Ts)];
-       var n = Math.floor (tt/Ts);
 
-       //return bodyElevation & footElevation
-       return [Hh - Hr/2*Math.cos(2*Math.PI*tt/Ts), Fc/2 - Fc/2*Math.cos(2*Math.PI*tt/Ts)];
+    function trackers(tt) {
+      var body = [LS / 2 + LS * tt / Ts, Hh - Hr / 2 * Math.cos(2 * Math.PI * tt / Ts)];
+      var n = Math.floor(tt / Ts);
+
+      //return bodyElevation & footElevation
+      return [Hh - Hr / 2 * Math.cos(2 * Math.PI * tt / Ts), Fc / 2 - Fc / 2 * Math.cos(2 * Math.PI * tt / Ts)];
     }
 
     function animate() {
       requestAnimationFrame(animate);
       render();
-      
+
       Vf = gcontrol.Vf;
-      
-      
-      if(stopkey == false) {
+
+
+      if (stopkey == false) {
         //console.log("play");
         Hh = 9.3;
         var tt = clock.getElapsedTime();
-        var data = trackers (tt);
+        var data = trackers(tt);
 
         // compute my own delta ...
         var dt = tt - nowTime;
         cumtime += dt;
         nowTime = tt;
 
-        bodypos[0] += Vf*dt;
+        bodypos[0] += Vf * dt;
         bodypos[1] = data[0];
         bodyball.position.x = bodypos[0];
         bodyball.position.y = bodypos[1];
-        var n = Math.floor(tt/Ts);
-        
-        
+        var n = Math.floor(tt / Ts);
+
+
         //console.log(biped.leftuparm.children[0]);
-        biped.leftuparm.children[0].rotation.z = Math.cos(tt)/4;
-        biped.rightuparm.children[0].rotation.z= -Math.cos(tt)/4;
+        biped.leftuparm.children[0].rotation.z = Math.cos(tt) / 4;
+        biped.rightuparm.children[0].rotation.z = -Math.cos(tt) / 4;
         // n is even: left is swing
         // n is odd:  right is swing
-        if (Math.floor(n/2)*2 === n) { // n is even
+        if (Math.floor(n / 2) * 2 === n) { // n is even
           leftpos[1] = data[1];
-          leftpos[0] += 2*Vf*dt;
+          leftpos[0] += 2 * Vf * dt;
           leftfootball.position.y = leftpos[1];
           leftfootball.position.z = 1.5;
           leftfootball.position.x = leftpos[0];
-          
+
           rightpos[1] = 0;
           rightpos[0] += 0;
           rightfootball.position.y = rightpos[1];
@@ -476,57 +497,57 @@
           rightfootball.position.x = rightpos[0];
         } else { // n is odd
           rightpos[1] = data[1];
-          rightpos[0] += 2*Vf*dt;
+          rightpos[0] += 2 * Vf * dt;
           rightfootball.position.y = rightpos[1];
           rightfootball.position.z = -1.5;
           rightfootball.position.x = rightpos[0];
-          
+
           leftpos[1] = 0;
           leftpos[0] += 0;
           leftfootball.position.y = leftpos[1];
           leftfootball.position.z = 1.5;
           leftfootball.position.x = leftpos[0];
         }
-        bodyball.position.set (bodypos[0], bodypos[1], 0);
-        body.position.set (bodypos[0], bodypos[1], 0);
+        bodyball.position.set(bodypos[0], bodypos[1], 0);
+        body.position.set(bodypos[0], bodypos[1], 0);
 
-        let thetas = [0,0], thetas2 = [0,0];
-        biped.target.copy (body.worldToLocal (new THREE.Vector3(leftpos[0], leftpos[1], 0)))
-        biped.ccdSys.solve (biped.target, thetas);
-        biped.update (thetas, thetas2);
+        let thetas = [0, 0],
+          thetas2 = [0, 0];
+        biped.target.copy(body.worldToLocal(new THREE.Vector3(leftpos[0], leftpos[1], 0)))
+        biped.ccdSys.solve(biped.target, thetas);
+        biped.update(thetas, thetas2);
 
-        biped.target2.copy (body.worldToLocal (new THREE.Vector3(rightpos[0], rightpos[1], 0)))
-        biped.ccdSys.solve (biped.target2, thetas2);
-        biped.update (thetas, thetas2);
-        
-      }
-      else {
-        
+        biped.target2.copy(body.worldToLocal(new THREE.Vector3(rightpos[0], rightpos[1], 0)))
+        biped.ccdSys.solve(biped.target2, thetas2);
+        biped.update(thetas, thetas2);
+
+      } else {
+
         console.log("stop");
         //Vf = 0.1;
         Hh = 10;
         var tt = clock.getElapsedTime();
-        var data = trackers (tt);
+        var data = trackers(tt);
         // compute my own delta ...
         var dt = tt - nowTime;
         cumtime += dt;
         nowTime = tt;
-        
-        bodypos[0] += 0*dt;
+
+        bodypos[0] += 0 * dt;
         bodypos[1] = 10;
         bodyball.position.x = bodypos[0];
         bodyball.position.y = bodypos[1];
-        var n = Math.floor(tt/Ts);
+        var n = Math.floor(tt / Ts);
         // n is even: left is swing
         // n is odd:  right is swing
-        
-        if (Math.floor(n/2)*2 === n) { // n is even
+
+        if (Math.floor(n / 2) * 2 === n) { // n is even
           leftpos[1] = 0;
           leftpos[0] += 0;
           leftfootball.position.y = leftpos[1];
           leftfootball.position.z = 1.5;
           leftfootball.position.x = leftpos[0];
-          
+
           rightpos[1] = 0;
           rightpos[0] += 0;
           rightfootball.position.y = rightpos[1];
@@ -538,24 +559,25 @@
           rightfootball.position.y = rightpos[1];
           rightfootball.position.z = -1.5;
           rightfootball.position.x = rightpos[0];
-          
+
           leftpos[1] = 0;
           leftpos[0] += 0;
           leftfootball.position.y = leftpos[1];
           leftfootball.position.z = 1.5;
           leftfootball.position.x = leftpos[0];
         }
-        bodyball.position.set (bodypos[0], bodypos[1], 0);
-        body.position.set (bodypos[0], bodypos[1], 0);
+        bodyball.position.set(bodypos[0], bodypos[1], 0);
+        body.position.set(bodypos[0], bodypos[1], 0);
 
-        let thetas = [-1e-3,-1e-3], thetas2 = [-1e-3,-1e-3];
-        biped.target.copy (body.worldToLocal (new THREE.Vector3(leftpos[0], leftpos[1], 0)))
-        biped.ccdSys.solve (biped.target, thetas);
-        biped.update (thetas, thetas2);
+        let thetas = [-1e-3, -1e-3],
+          thetas2 = [-1e-3, -1e-3];
+        biped.target.copy(body.worldToLocal(new THREE.Vector3(leftpos[0], leftpos[1], 0)))
+        biped.ccdSys.solve(biped.target, thetas);
+        biped.update(thetas, thetas2);
 
-        biped.target2.copy (body.worldToLocal (new THREE.Vector3(rightpos[0], rightpos[1], 0)))
-        biped.ccdSys.solve (biped.target2, thetas2);
-        biped.update (thetas, thetas2);
+        biped.target2.copy(body.worldToLocal(new THREE.Vector3(rightpos[0], rightpos[1], 0)))
+        biped.ccdSys.solve(biped.target2, thetas2);
+        biped.update(thetas, thetas2);
       }
 
     }
@@ -564,7 +586,6 @@
       renderer.render(scene, camera);
     }
 
-
   </script>
-  
+
 </body>
