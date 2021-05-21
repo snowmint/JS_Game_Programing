@@ -3,29 +3,33 @@
 <html>
 
 <head>
-<link rel="stylesheet" type="text/css" href="mystyle.css">
+  <link rel="stylesheet" type="text/css" href="mystyle.css">
 </head>
 
-<body> 
-<div id="info">
+<body>
+  <div id="info">
     Agent (Seek, Arrival, Collision)<br>
     <div id="counter">00:00.000</div>
     <p id="message"></p>
-</div>
+  </div>
 
+  <!--
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/108/three.min.js"></script>
 <script src="https://threejs.org/examples/js/controls/OrbitControls.js"></script>
-<script src="https://code.jquery.com/jquery-2.1.4.min.js"></script>
+-->
+  <script src="../three.js/build/three.min.js"></script>
+  <script src="../three.js/examples/js/loaders/MTLLoader.js"></script>
+  <script src="../three.js/examples/js/loaders/OBJLoader.js"></script>
+  <script src="../three.js/examples/js/controls/OrbitControls.js"></script>
+  <script src="https://code.jquery.com/jquery-2.1.4.min.js"></script>
 
-<script src="./agent0.js"></script>
-<script src="./obstacle.js"></script>
-<script src="./target.js"></script>
+  <script src="./agent0.js"></script>
+  <script src="./obstacle.js"></script>
+  <script src="./target.js"></script>
 
-<!-- must be before main.js -->
-<script src="./scene.js"></script>
-<script src="./threemain.js"></script>
+  <!-- must be before main.js -->
+  <script src="./scene.js"></script>
+  <script src="./threemain.js"></script>
 
-<script src="./main.js"></script>
-</body>
-
-</html>
+  <script src="./main.js"></script>
+</body></html>
