@@ -1,9 +1,13 @@
 <head>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/108/three.min.js"></script>
-    <script src="https://threejs.org/examples/js/controls/OrbitControls.js"></script>
-    <script src="https://jyunming-chen.github.io/tutsplus/js/KeyboardState.js"></script>
-    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
-    <style>
+  <!--script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/108/three.min.js"></script>
+    <script src="https://threejs.org/examples/js/controls/OrbitControls.js"></script-->
+  <script src="../three.js/build/three.min.js"></script>
+  <script src="../three.js/examples/js/loaders/MTLLoader.js"></script>
+  <script src="../three.js/examples/js/loaders/OBJLoader.js"></script>
+  <script src="../three.js/examples/js/controls/OrbitControls.js"></script>
+  <script src="https://jyunming-chen.github.io/tutsplus/js/KeyboardState.js"></script>
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+  <style>
     #info {
       position: absolute;
       top: 0px;
@@ -34,458 +38,453 @@
       border: 1px solid #96B9F2;
       background-color: Transparent;
       color: white;
-      box-shadow: 0 5px 20px 0 rgba( 0, 0, 0, 0.54), 0 17px 50px 0 rgba(0, 0, 0, 0.19);
+      box-shadow: 0 5px 20px 0 rgba(0, 0, 0, 0.54), 0 17px 50px 0 rgba(0, 0, 0, 0.19);
     }
 
-    </style>
+  </style>
 </head>
+
 <body>
-  
+
   <div id="info">
     with BGM and different collision(Puck to Wall/ Puck to Puck) sound(compose by Snowmint)<br><br>
     <button id="dim" style="width:20%">Dimmer</button>
     <button id="play" style="width:30%">Click twice first</button>
   </div>
 
-    <audio controls volume="0.1" id="collisionsound" style="display:none">
-        <source src="./sound/collisionSound_short3.wav" type='audio/wav'>
-    </audio>
+  <audio controls volume="0.1" id="collisionsound" style="display:none">
+    <source src="./sound/collisionSound_short3.wav" type='audio/wav'>
+  </audio>
 
-    <audio controls volume="0.1" id="collisionsoundWall" style="display:none">
-        <source src="./sound/collisionSound_short2.wav" type='audio/wav'>
-    </audio>
+  <audio controls volume="0.1" id="collisionsoundWall" style="display:none">
+    <source src="./sound/collisionSound_short2.wav" type='audio/wav'>
+  </audio>
 
-    <audio id="soundtrack" autoplay loop style="display:none" >
-        <source src="./bgm/1015-bgm_new.wav" type='audio/wav'>
-    </audio>
+  <audio id="soundtrack" autoplay loop style="display:none">
+    <source src="./bgm/1015-bgm_new.wav" type='audio/wav'>
+  </audio>
 
 </body>
 <script>
-class Circle {
-  constructor() {
-    this.pos = new THREE.Vector3(Math.random() * (89 + 89) - 89, 0, Math.random() * (89 + 89) - 89);
-    this.vel = new THREE.Vector3(Math.random() * (100 + 100) - 100, 0, Math.random() * (100 + 100) - 100);
-    this.mass = 1;
-    this.mesh = new THREE.Object3D();
-    this.force = new THREE.Vector3(0, -10, 0);
-    this.light = new THREE.PointLight();
-  }
+  class Circle {
+    constructor() {
+      this.pos = new THREE.Vector3(Math.random() * (89 + 89) - 89, 0, Math.random() * (89 + 89) - 89);
+      this.vel = new THREE.Vector3(Math.random() * (100 + 100) - 100, 0, Math.random() * (100 + 100) - 100);
+      this.mass = 1;
+      this.mesh = new THREE.Object3D();
+      this.force = new THREE.Vector3(0, -10, 0);
+      this.light = new THREE.PointLight();
+    }
 
-  intersect(other) {
-    //using multiplications because it's faster than Math.pow
-    var distance = Math.sqrt((this.pos.x - other.pos.x) * (this.pos.x - other.pos.x) + (this.pos.z - other.pos.z) * (this.pos.z - other.pos.z));
-    return distance <= 10;
-  }
-  intersectMW(otherMotionWall, num) {
-    //using multiplications because it's faster than Math.pow
-    if(num == 4){
-        if (this.pos.x >= (otherMotionWall.position.x)-53 && this.pos.x <= (otherMotionWall.position.x)+53 && this.pos.z >= (otherMotionWall.position.z)-8 && this.pos.z <= (otherMotionWall.position.z)+8 && this.pos.y <= (otherMotionWall.position.y)+25 && this.pos.y >= (otherMotionWall.position.y)-25) return true;
+    intersect(other) {
+      //using multiplications because it's faster than Math.pow
+      var distance = Math.sqrt((this.pos.x - other.pos.x) * (this.pos.x - other.pos.x) + (this.pos.z - other.pos.z) * (this.pos.z - other.pos.z));
+      return distance <= 10;
+    }
+    intersectMW(otherMotionWall, num) {
+      //using multiplications because it's faster than Math.pow
+      if (num == 4) {
+        if (this.pos.x >= (otherMotionWall.position.x) - 53 && this.pos.x <= (otherMotionWall.position.x) + 53 && this.pos.z >= (otherMotionWall.position.z) - 8 && this.pos.z <= (otherMotionWall.position.z) + 8 && this.pos.y <= (otherMotionWall.position.y) + 25 && this.pos.y >= (otherMotionWall.position.y) - 25) return true;
         else return false;
-    }
-    if(num == 5){
-        if (this.pos.x >= otherMotionWall.position.x-8 && this.pos.x <= otherMotionWall.position.x+8 && this.pos.z >= otherMotionWall.position.z-53 && this.pos.z <= otherMotionWall.position.z+53 && this.pos.y <= (otherMotionWall.position.y)+25 && this.pos.y >= (otherMotionWall.position.y)-25) return true;
+      }
+      if (num == 5) {
+        if (this.pos.x >= otherMotionWall.position.x - 8 && this.pos.x <= otherMotionWall.position.x + 8 && this.pos.z >= otherMotionWall.position.z - 53 && this.pos.z <= otherMotionWall.position.z + 53 && this.pos.y <= (otherMotionWall.position.y) + 25 && this.pos.y >= (otherMotionWall.position.y) - 25) return true;
         else return false;
+      }
+    }
+
+    collisionWall() {
+      if (this.pos.x > 92) {
+        collisionSoundWall.play();
+        this.vel.x *= -1;
+        this.pos.x = 92;
+      }
+      if (this.pos.x < -92) {
+        collisionSoundWall.play();
+        this.vel.x *= -1;
+        this.pos.x = -92;
+      }
+      if (this.pos.z > 92) {
+        collisionSoundWall.play();
+        this.vel.z *= -1;
+        this.pos.z = 92;
+      }
+      if (this.pos.z < -92) {
+        collisionSoundWall.play();
+        this.vel.z *= -1;
+        this.pos.z = -92;
+      }
+    }
+    CollisionOfEach(p2) {
+      if (this.intersect(p2)) {
+        if (this.pos.x <= p2.pos.x && this.pos.z <= p2.pos.z) {
+          collisionSound.play();
+          this.pos.x -= 0.2;
+          this.pos.z -= 0.2;
+          p2.pos.x += 0.2;
+          p2.pos.x += 0.2;
+        }
+        if (this.pos.x <= p2.pos.x && this.pos.z > p2.pos.z) {
+          collisionSound.play();
+          this.pos.x -= 0.2;
+          this.pos.z += 0.2;
+          p2.pos.x += 0.2;
+          p2.pos.x -= 0.2;
+        }
+        if (this.pos.x > p2.pos.x && this.pos.z > p2.pos.z) {
+          collisionSound.play();
+          this.pos.x += 0.2;
+          this.pos.z += 0.2;
+          p2.pos.x -= 0.2;
+          p2.pos.x -= 0.2;
+        }
+        if (this.pos.x > p2.pos.x && this.pos.z <= p2.pos.z) {
+          collisionSound.play();
+          this.pos.x += 0.2;
+          this.pos.z -= 0.2;
+          p2.pos.x -= 0.2;
+          p2.pos.x += 0.2;
+        }
+        var distance = Math.sqrt((this.pos.x - p2.pos.x) * (this.pos.x - p2.pos.x) + (this.pos.z - p2.pos.z) * (this.pos.z - p2.pos.z));
+        var dotRet1, dotRet2;
+        dotRet1 = this.vel.clone().sub(p2.vel).dot(this.pos.clone().sub(p2.pos)) / (distance * distance);
+        dotRet2 = p2.vel.clone().sub(this.vel).dot(p2.pos.clone().sub(this.pos)) / (distance * distance);
+        this.vel = this.vel.clone().sub(this.pos.clone().sub(p2.pos).multiplyScalar(dotRet1));
+        p2.vel = p2.vel.clone().sub(p2.pos.clone().sub(this.pos).multiplyScalar(dotRet2));
+      }
+    }
+    CollisionOfMotionWall(motionWall, num) {
+      if (this.intersectMW(motionWall, 4) && num == 4) {
+        if (this.pos.x <= motionWall.position.x && this.pos.z <= motionWall.position.z) {
+          collisionSound.play();
+          this.pos.x -= 0.8;
+          this.pos.z -= 0.8;
+          this.vel.z *= -1;
+          this.vel.x *= -1;
+        }
+        if (this.pos.x <= motionWall.position.x && this.pos.z > motionWall.position.z) {
+          collisionSound.play();
+          this.pos.x -= 0.8;
+          this.pos.z += 0.8;
+          this.vel.z *= -1;
+          this.vel.x *= -1;
+        }
+        if (this.pos.x > motionWall.position.x && this.pos.z > motionWall.position.z) {
+          collisionSound.play();
+          this.pos.x += 0.8;
+          this.pos.z += 0.8;
+          this.vel.z *= -1;
+          this.vel.x *= -1;
+        }
+        if (this.pos.x > motionWall.position.x && this.pos.z <= motionWall.position.z) {
+          collisionSound.play();
+          this.pos.x += 0.8;
+          this.pos.z -= 0.8;
+          this.vel.z *= -1;
+          this.vel.x *= -1;
+        }
+      }
+      if (this.intersectMW(motionWall, 5) && num == 5) {
+        if (this.pos.x <= motionWall.position.x && this.pos.z <= motionWall.position.z) {
+          collisionSound.play();
+          this.pos.x -= 0.8;
+          this.pos.z -= 0.8;
+          this.vel.z *= -1;
+          this.vel.x *= -1;
+        }
+        if (this.pos.x <= motionWall.position.x && this.pos.z > motionWall.position.z) {
+          collisionSound.play();
+          this.pos.x -= 0.8;
+          this.pos.z += 0.8;
+          this.vel.z *= -1;
+          this.vel.x *= -1;
+        }
+        if (this.pos.x > motionWall.position.x && this.pos.z > motionWall.position.z) {
+          collisionSound.play();
+          this.pos.x += 0.8;
+          this.pos.z += 0.8;
+          this.vel.z *= -1;
+          this.vel.x *= -1;
+        }
+        if (this.pos.x > motionWall.position.x && this.pos.z <= motionWall.position.z) {
+          collisionSound.play();
+          this.pos.x += 0.8;
+          this.pos.z -= 0.8;
+          this.vel.z *= -1;
+          this.vel.x *= -1;
+        }
+      }
     }
   }
 
-  collisionWall() {
-    if (this.pos.x > 92) {
-      collisionSoundWall.play();
-      this.vel.x *= -1;
-      this.pos.x = 92;
-    }
-    if (this.pos.x < -92) {
-      collisionSoundWall.play();
-      this.vel.x *= -1;
-      this.pos.x = -92;
-    }
-    if (this.pos.z > 92) {
-      collisionSoundWall.play();
-      this.vel.z *= -1;
-      this.pos.z = 92;
-    }
-    if (this.pos.z < -92) {
-      collisionSoundWall.play();
-      this.vel.z *= -1;
-      this.pos.z = -92;
+  class Wall {
+    constructor() {
+      this.pos = new THREE.Vector3();
     }
   }
-  CollisionOfEach(p2) {
-    if (this.intersect(p2)) {
-      if (this.pos.x <= p2.pos.x && this.pos.z <= p2.pos.z) {
-        collisionSound.play();
-        this.pos.x -= 0.2;
-        this.pos.z -= 0.2;
-        p2.pos.x += 0.2;
-        p2.pos.x += 0.2;
-      }
-      if (this.pos.x <= p2.pos.x && this.pos.z > p2.pos.z) {
-        collisionSound.play();
-        this.pos.x -= 0.2;
-        this.pos.z += 0.2;
-        p2.pos.x += 0.2;
-        p2.pos.x -= 0.2;
-      }
-      if (this.pos.x > p2.pos.x && this.pos.z > p2.pos.z) {
-        collisionSound.play();
-        this.pos.x += 0.2;
-        this.pos.z += 0.2;
-        p2.pos.x -= 0.2;
-        p2.pos.x -= 0.2;
-      }
-      if (this.pos.x > p2.pos.x && this.pos.z <= p2.pos.z) {
-        collisionSound.play();
-        this.pos.x += 0.2;
-        this.pos.z -= 0.2;
-        p2.pos.x -= 0.2;
-        p2.pos.x += 0.2;
-      }
-      var distance = Math.sqrt((this.pos.x - p2.pos.x) * (this.pos.x - p2.pos.x) + (this.pos.z - p2.pos.z) * (this.pos.z - p2.pos.z));
-      var dotRet1, dotRet2;
-      dotRet1 = this.vel.clone().sub(p2.vel).dot(this.pos.clone().sub(p2.pos)) / (distance * distance);
-      dotRet2 = p2.vel.clone().sub(this.vel).dot(p2.pos.clone().sub(this.pos)) / (distance * distance);
-      this.vel = this.vel.clone().sub(this.pos.clone().sub(p2.pos).multiplyScalar(dotRet1));
-      p2.vel = p2.vel.clone().sub(p2.pos.clone().sub(this.pos).multiplyScalar(dotRet2));
-    }
-  }
-  CollisionOfMotionWall(motionWall, num) {
-    if (this.intersectMW(motionWall, 4) && num == 4) {
-      if (this.pos.x <= motionWall.position.x && this.pos.z <= motionWall.position.z) {
-        collisionSound.play();
-        this.pos.x -= 0.8;
-        this.pos.z -= 0.8;
-        this.vel.z *= -1;
-        this.vel.x *= -1;
-      }
-      if (this.pos.x <= motionWall.position.x && this.pos.z > motionWall.position.z) {
-        collisionSound.play();
-        this.pos.x -= 0.8;
-        this.pos.z += 0.8;
-        this.vel.z *= -1;
-        this.vel.x *= -1;
-      }
-      if (this.pos.x > motionWall.position.x && this.pos.z > motionWall.position.z) {
-        collisionSound.play();
-        this.pos.x += 0.8;
-        this.pos.z += 0.8;
-        this.vel.z *= -1;
-        this.vel.x *= -1;
-      }
-      if (this.pos.x > motionWall.position.x && this.pos.z <= motionWall.position.z) {
-        collisionSound.play();
-        this.pos.x += 0.8;
-        this.pos.z -= 0.8;
-        this.vel.z *= -1;
-        this.vel.x *= -1;
-      }
-    }
-    if (this.intersectMW(motionWall, 5) && num == 5) {
-      if (this.pos.x <= motionWall.position.x && this.pos.z <= motionWall.position.z) {
-        collisionSound.play();
-        this.pos.x -= 0.8;
-        this.pos.z -= 0.8;
-        this.vel.z *= -1;
-        this.vel.x *= -1;
-      }
-      if (this.pos.x <= motionWall.position.x && this.pos.z > motionWall.position.z) {
-        collisionSound.play();
-        this.pos.x -= 0.8;
-        this.pos.z += 0.8;
-        this.vel.z *= -1;
-        this.vel.x *= -1;
-      }
-      if (this.pos.x > motionWall.position.x && this.pos.z > motionWall.position.z) {
-        collisionSound.play();
-        this.pos.x += 0.8;
-        this.pos.z += 0.8;
-        this.vel.z *= -1;
-        this.vel.x *= -1;
-      }
-      if (this.pos.x > motionWall.position.x && this.pos.z <= motionWall.position.z) {
-        collisionSound.play();
-        this.pos.x += 0.8;
-        this.pos.z -= 0.8;
-        this.vel.z *= -1;
-        this.vel.x *= -1;
-      }
-    }
-  }
-}
 
-class Wall {
-  constructor() {
-    this.pos = new THREE.Vector3();
-  }
-}
+  $('#play').click(function() {
+    isPaused = !isPaused;
+    if (isPaused == true) {
+      $('#play').text('Play')
+      soundTrack.pause()
+    } else {
+      if (click_twice_first >= 2) $('#play').text('Pause')
+      soundTrack.play()
+    }
+    if (click_twice_first == 0) {
+      $('#play').text('Click once more')
+      click_twice_first++;
+    } else if (click_twice_first == 1) {
+      $('#play').text('Pause')
+      click_twice_first++;
+    }
+  });
 
-$('#play').click(function() {
-  isPaused = !isPaused;
-  if (isPaused == true) {
-    $('#play').text('Play')
-    soundTrack.pause()
-  } else {
-    if (click_twice_first >= 2) $('#play').text('Pause') 
-    soundTrack.play()
-  }
-  if(click_twice_first == 0) {
-    $('#play').text('Click once more')
-    click_twice_first++;
-  }
-  else if(click_twice_first == 1) {
-    $('#play').text('Pause')
-    click_twice_first++;
-  }
-});
+  $('#dim').click(function() {
+    isPaused = !isPaused;
+    if (isPaused) {
 
-$('#dim').click(function() {
-  isPaused = !isPaused;
-  if (isPaused) {
-    
-    if(!isDimming) $('#dim').text('Lighter')
-    else $('#dim').text('Dimmer')
+      if (!isDimming) $('#dim').text('Lighter')
+      else $('#dim').text('Dimmer')
 
+      isDimming = !isDimming;
+      sign = isDimming ? -1 : 1;
+    }
+  });
+
+  function toggle() {
     isDimming = !isDimming;
     sign = isDimming ? -1 : 1;
+    console.log(isDimming);
   }
-});
 
-function toggle() {
-  isDimming = !isDimming;
-  sign = isDimming ? -1 : 1;
-  console.log(isDimming);
-}
-    
-//about sound
-var collisionSound, collisionSoundWall, soundTrack;
-var isDimming = false, soundVal = 1.0, sign = 1.0;
-var isPaused = false;
-//about sound end
-var camera, scene, renderer, mesh;
-var keyboard = new KeyboardState();
-var turn = true;
-var angle = 0;
-var walls, wall_entry;
-var clock = new THREE.Clock();
-var lightSpots;
-var numOfPucks = 21;
-var click_twice_first = 0;
-var offset = 0.05, offsetY = 0.05, offsetC = 0.05;
-init();
-animate();
+  //about sound
+  var collisionSound, collisionSoundWall, soundTrack;
+  var isDimming = false,
+    soundVal = 1.0,
+    sign = 1.0;
+  var isPaused = false;
+  //about sound end
+  var camera, scene, renderer, mesh;
+  var keyboard = new KeyboardState();
+  var turn = true;
+  var angle = 0;
+  var walls, wall_entry;
+  var clock = new THREE.Clock();
+  var lightSpots;
+  var numOfPucks = 21;
+  var click_twice_first = 0;
+  var offset = 0.05,
+    offsetY = 0.05,
+    offsetC = 0.05;
+  init();
+  animate();
 
-function onWindowResize() {
+  function onWindowResize() {
     camera.aspect = window.innerWidth / window.innerHeight;
     camera.updateProjectionMatrix();
     renderer.setSize(window.innerWidth, window.innerHeight);
-}
-function init() {
-  collisionSound = document.getElementById('collisionsound');
-  collisionSound.volume = 0.2;
-  collisionSoundWall = document.getElementById('collisionsoundWall');
-  collisionSoundWall.volume = 0.2;
-  //soundTrack = document.getElementById('soundtrack');
-  soundTrack = document.getElementById('soundtrack');
-  soundTrack.volume = 0.7;
-
-  scene = new THREE.Scene();
-  camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 1, 1000);
-  camera.position.z = 250;
-  camera.position.y = 130;
-  scene.add(camera);
-
-  let light = new THREE.PointLight(0xffffff);
-  light.position.set(100, 300, 200);
-  scene.add(light);
-  let AbLight = new THREE.AmbientLight(0x474747); // soft white light
-  light.position.set(300, 300, 100);
-  scene.add(AbLight);
-  
-  window.addEventListener('resize', onWindowResize, true);
-
-  renderer = new THREE.WebGLRenderer({
-    alpha: true
-  });
-  renderer.setSize(window.innerWidth, window.innerHeight);
-	
-  var controls = new THREE.OrbitControls(camera, renderer.domElement);
-
-  document.body.appendChild(renderer.domElement);
-  //ground
-  var ground = new THREE.Mesh(new THREE.PlaneGeometry(206, 206), new THREE.MeshPhongMaterial({
-    color: 0x222222,
-    side: THREE.DoubleSide
-  }));
-  ground.rotation.x = -Math.PI / 2;
-  ground.position.y = -1.5;
-  scene.add(ground);
-  //walls
-  var cubeGeom = new THREE.BoxGeometry(206, 50, 6);
-  var cubeGeom2 = new THREE.BoxGeometry(100, 50, 6);
-  var wallMeterial = new THREE.MeshPhongMaterial({
-    color: 0x000000,
-    transparent: true,
-    opacity: 0.3,
-    side: THREE.DoubleSide,
-  });
-  wall_entry = new THREE.Mesh(cubeGeom, wallMeterial);
-  wall_ano_entry = new THREE.Mesh(cubeGeom2, wallMeterial);
-  walls = [];
-  wall_entrys = []
-  let PosOfx = [0, 100, 0, -100, 0, 0],
-    PosOfz = [100, 0, -100, 0, 0, 0],
-    Rotation = [0, 1, 0, 1, 0, 1];
-
-  for (let i = 0; i < 6; i++) {
-    let wall = new Wall();
-    walls.push(wall);
-    let thisMesh;
-    if(i < 4) thisMesh = wall_entry.clone();
-    else if(i >= 4) thisMesh = wall_ano_entry.clone();
-    if (Rotation[i] == 1) thisMesh.rotation.y = -Math.PI / 2;
-    thisMesh.position.set(PosOfx[i], 23.5, PosOfz[i], Rotation[i]);
-    console.log(thisMesh);
-
-    wall_entrys.push(thisMesh);
-    scene.add(thisMesh);
   }
-  //wall_entrys[4].name = "Z_motion";
-  //wall_entrys[5].name = "X_motion";
-  console.log(wall_entrys[4]);
-  //wallsend
-  ////////////////////////////////////////////////////////////////
-  //pucks & lights
-  var CylinGeom = new THREE.CylinderGeometry(5, 5, 2, 32);
-  pucks = [];
-  //****keep the color more pleasing to the eye****//
-  var randColor = [];
-  let colorSet = [0xB52F3C, 0xe29d26, 0xe2dd26, 0x57e530, 0x30dbe5, 0x2a79f9, 0xBC86E8, 0xB52F3C, 0xe29d26, 0xe2dd26, 0x57e530, 0x30dbe5, 0x2a79f9, 0xBC86E8, 0xB52F3C, 0xe29d26, 0xe2dd26, 0x57e530, 0x30dbe5, 0x2a79f9, 0xBC86E8];
-  let emissiSet = [0x915F5F, 0x705528, 0x6d6b24, 0x568255, 0x24696d, 0x23447a, 0x54376B, 0x915F5F, 0x705528, 0x6d6b24, 0x568255, 0x24696d, 0x23447a, 0x54376B, 0x915F5F, 0x705528, 0x6d6b24, 0x568255, 0x24696d, 0x23447a, 0x54376B];
-  var color_rand = new THREE.Color();
-  var rand_record;
-    //color_rand.setHSL( Math.random(), 1.0, 0.5 );
-  for (let i = 0; i < numOfPucks; i++) {
-    rand_record = Math.random();
-    color_rand.setHSL( rand_record, 1.0, 0.5 );
-    let puck = new Circle();
-    puck.mesh = new THREE.Mesh(CylinGeom, new THREE.MeshLambertMaterial({
-      color: color_rand,//colorSet[color_pick],//colorSet[i],
-      emissive: color_rand,//emissiSet[color_pick],//emissiSet[i],
+
+  function init() {
+    collisionSound = document.getElementById('collisionsound');
+    collisionSound.volume = 0.2;
+    collisionSoundWall = document.getElementById('collisionsoundWall');
+    collisionSoundWall.volume = 0.2;
+    //soundTrack = document.getElementById('soundtrack');
+    soundTrack = document.getElementById('soundtrack');
+    soundTrack.volume = 0.7;
+
+    scene = new THREE.Scene();
+    camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 1, 1000);
+    camera.position.z = 250;
+    camera.position.y = 130;
+    scene.add(camera);
+
+    let light = new THREE.PointLight(0xffffff);
+    light.position.set(100, 300, 200);
+    scene.add(light);
+    let AbLight = new THREE.AmbientLight(0x474747); // soft white light
+    light.position.set(300, 300, 100);
+    scene.add(AbLight);
+
+    window.addEventListener('resize', onWindowResize, true);
+
+    renderer = new THREE.WebGLRenderer({
+      alpha: true
+    });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+
+    var controls = new THREE.OrbitControls(camera, renderer.domElement);
+
+    document.body.appendChild(renderer.domElement);
+    //ground
+    var ground = new THREE.Mesh(new THREE.PlaneGeometry(206, 206), new THREE.MeshPhongMaterial({
+      color: 0x222222,
+      side: THREE.DoubleSide
     }));
-    randColor.push(rand_record);
-    pucks.push(puck);
-    scene.add(puck.mesh);
-  }
-  console.log("randcolor");
-  console.log(randColor);
-  //lightSpots = [];
-  for (let i = 0; i < numOfPucks; i++) {
-    pucks[i].light = new THREE.PointLight(color_rand.setHSL( randColor[i], 1.0, 0.5 ), 15, 30);//colorSet[randColor[i]]
-    pucks[i].light.position.set(pucks[i].pos.x, pucks[i].pos.y, pucks[i].pos.z);
-    scene.add(pucks[i].light);
-  }
-  //pucks & lights
-  //star
-  var starsGeometry = new THREE.Geometry();
-  for (var i = 0; i < 10000; i++) {
-    var star = new THREE.Vector3();
-    star.x = THREE.Math.randFloatSpread(2000);
-    star.y = THREE.Math.randFloatSpread(2000);
-    star.z = THREE.Math.randFloatSpread(2000);
-    starsGeometry.vertices.push(star);
-  }
-  var starsMaterial = new THREE.PointsMaterial({
-    color: 0xffffff
-  });
-  var starField = new THREE.Points(starsGeometry, starsMaterial);
-  scene.add(starField);
-  //starend
-  ////////////////////////////////////////////////////////////////
-  console.log(pucks);
-  //console.log(lightSpots);
-}
-function getRandom(min,max){
-    return Math.floor(Math.random()*(max-min+1))+min;
-};
+    ground.rotation.x = -Math.PI / 2;
+    ground.position.y = -1.5;
+    scene.add(ground);
+    //walls
+    var cubeGeom = new THREE.BoxGeometry(206, 50, 6);
+    var cubeGeom2 = new THREE.BoxGeometry(100, 50, 6);
+    var wallMeterial = new THREE.MeshPhongMaterial({
+      color: 0x000000,
+      transparent: true,
+      opacity: 0.3,
+      side: THREE.DoubleSide,
+    });
+    wall_entry = new THREE.Mesh(cubeGeom, wallMeterial);
+    wall_ano_entry = new THREE.Mesh(cubeGeom2, wallMeterial);
+    walls = [];
+    wall_entrys = []
+    let PosOfx = [0, 100, 0, -100, 0, 0],
+      PosOfz = [100, 0, -100, 0, 0, 0],
+      Rotation = [0, 1, 0, 1, 0, 1];
 
-function randomColor(){
-    var r = Math.floor(Math.random()*256);
-    var g = Math.floor(Math.random()*256);
-    var b = Math.floor(Math.random()*256);
-    var color = '0x'+r.toString(16)+g.toString(16)+b.toString(16);
+    for (let i = 0; i < 6; i++) {
+      let wall = new Wall();
+      walls.push(wall);
+      let thisMesh;
+      if (i < 4) thisMesh = wall_entry.clone();
+      else if (i >= 4) thisMesh = wall_ano_entry.clone();
+      if (Rotation[i] == 1) thisMesh.rotation.y = -Math.PI / 2;
+      thisMesh.position.set(PosOfx[i], 23.5, PosOfz[i], Rotation[i]);
+      console.log(thisMesh);
+
+      wall_entrys.push(thisMesh);
+      scene.add(thisMesh);
+    }
+    //wall_entrys[4].name = "Z_motion";
+    //wall_entrys[5].name = "X_motion";
+    console.log(wall_entrys[4]);
+    //wallsend
+    ////////////////////////////////////////////////////////////////
+    //pucks & lights
+    var CylinGeom = new THREE.CylinderGeometry(5, 5, 2, 32);
+    pucks = [];
+    //****keep the color more pleasing to the eye****//
+    var randColor = [];
+    let colorSet = [0xB52F3C, 0xe29d26, 0xe2dd26, 0x57e530, 0x30dbe5, 0x2a79f9, 0xBC86E8, 0xB52F3C, 0xe29d26, 0xe2dd26, 0x57e530, 0x30dbe5, 0x2a79f9, 0xBC86E8, 0xB52F3C, 0xe29d26, 0xe2dd26, 0x57e530, 0x30dbe5, 0x2a79f9, 0xBC86E8];
+    let emissiSet = [0x915F5F, 0x705528, 0x6d6b24, 0x568255, 0x24696d, 0x23447a, 0x54376B, 0x915F5F, 0x705528, 0x6d6b24, 0x568255, 0x24696d, 0x23447a, 0x54376B, 0x915F5F, 0x705528, 0x6d6b24, 0x568255, 0x24696d, 0x23447a, 0x54376B];
+    var color_rand = new THREE.Color();
+    var rand_record;
+    //color_rand.setHSL( Math.random(), 1.0, 0.5 );
+    for (let i = 0; i < numOfPucks; i++) {
+      rand_record = Math.random();
+      color_rand.setHSL(rand_record, 1.0, 0.5);
+      let puck = new Circle();
+      puck.mesh = new THREE.Mesh(CylinGeom, new THREE.MeshLambertMaterial({
+        color: color_rand, //colorSet[color_pick],//colorSet[i],
+        emissive: color_rand, //emissiSet[color_pick],//emissiSet[i],
+      }));
+      randColor.push(rand_record);
+      pucks.push(puck);
+      scene.add(puck.mesh);
+    }
+    console.log("randcolor");
+    console.log(randColor);
+    //lightSpots = [];
+    for (let i = 0; i < numOfPucks; i++) {
+      pucks[i].light = new THREE.PointLight(color_rand.setHSL(randColor[i], 1.0, 0.5), 15, 30); //colorSet[randColor[i]]
+      pucks[i].light.position.set(pucks[i].pos.x, pucks[i].pos.y, pucks[i].pos.z);
+      scene.add(pucks[i].light);
+    }
+    //pucks & lights
+    //star
+//    var starsGeometry = new THREE.Geometry();
+// for (var i = 0; i < 10000; i++) { // var star=new THREE.Vector3(); // star.x=THREE.Math.randFloatSpread(2000); // star.y=THREE.Math.randFloatSpread(2000); // star.z=THREE.Math.randFloatSpread(2000); // starsGeometry.vertices.push(star); // } // var starsMaterial=new THREE.PointsMaterial({ // color: 0xffffff // }); // var starField=new THREE.Points(starsGeometry, starsMaterial); // scene.add(starField);
+    //starend
+    ////////////////////////////////////////////////////////////////
+    console.log(pucks);
+    //console.log(lightSpots);
+  }
+
+  function getRandom(min, max) {
+    return Math.floor(Math.random() * (max - min + 1)) + min;
+  };
+
+  function randomColor() {
+    var r = Math.floor(Math.random() * 256);
+    var g = Math.floor(Math.random() * 256);
+    var b = Math.floor(Math.random() * 256);
+    var color = '0x' + r.toString(16) + g.toString(16) + b.toString(16);
     return color;
-}
-function randomColor2() {
-    var color="0x";
-    for(var i=0;i<6;i++){
-        color += (Math.random()*16 | 0).toString(16);
+  }
+
+  function randomColor2() {
+    var color = "0x";
+    for (var i = 0; i < 6; i++) {
+      color += (Math.random() * 16 | 0).toString(16);
     }
     console.log(color);
     return color;
-}
-//****End****//
-function animate() {
-  soundVal += sign * 0.01;
-  soundVal = THREE.Math.clamp(soundVal, 0, 1);
-  soundtrack.volume = soundVal;
-  
-  var dt = clock.getDelta();
-  
-  wall_entrys[4].position.z+=offset;
-  wall_entrys[4].position.y+=offsetY;
-  if(wall_entrys[4].position.z >= 80){
-      offset = (-1)*offset;
+  }
+  //****End****//
+  function animate() {
+    soundVal += sign * 0.01;
+    soundVal = THREE.Math.clamp(soundVal, 0, 1);
+    soundtrack.volume = soundVal;
+
+    var dt = clock.getDelta();
+
+    wall_entrys[4].position.z += offset;
+    wall_entrys[4].position.y += offsetY;
+    if (wall_entrys[4].position.z >= 80) {
+      offset = (-1) * offset;
       wall_entrys[4].position.z = 79;
-  }
-  if(wall_entrys[4].position.z <= -80){
-      offset = (-1)*offset;
+    }
+    if (wall_entrys[4].position.z <= -80) {
+      offset = (-1) * offset;
       wall_entrys[4].position.z = -79;
-  }
-  if(wall_entrys[4].position.y >= 40){
-      offsetY = (-1)*offsetY;
+    }
+    if (wall_entrys[4].position.y >= 40) {
+      offsetY = (-1) * offsetY;
       wall_entrys[4].position.y = 39;
-  }
-  if(wall_entrys[4].position.y <= -40){
-      offsetY = (-1)*offsetY;
+    }
+    if (wall_entrys[4].position.y <= -40) {
+      offsetY = (-1) * offsetY;
       wall_entrys[4].position.y = -39;
-  }
-    
-  wall_entrys[5].position.x+=offset;
-  wall_entrys[5].position.y += offsetC;
-  if(wall_entrys[5].position.x >= 80){
-      offset = (-1)*offset;
+    }
+
+    wall_entrys[5].position.x += offset;
+    wall_entrys[5].position.y += offsetC;
+    if (wall_entrys[5].position.x >= 80) {
+      offset = (-1) * offset;
       wall_entrys[5].position.x = 79;
-  }
-  if(wall_entrys[5].position.x <= -80){
-      offset = (-1)*offset;
+    }
+    if (wall_entrys[5].position.x <= -80) {
+      offset = (-1) * offset;
       wall_entrys[5].position.x = -79;
-  }
-  if(wall_entrys[5].position.y >= 40){
-      offsetC = (-1)*offsetC;
+    }
+    if (wall_entrys[5].position.y >= 40) {
+      offsetC = (-1) * offsetC;
       wall_entrys[5].position.y = 39;
-  }
-  if(wall_entrys[5].position.y <= -40){
-      offsetC = (-1)*offsetC;
+    }
+    if (wall_entrys[5].position.y <= -40) {
+      offsetC = (-1) * offsetC;
       wall_entrys[5].position.y = -39;
-  }
-    
-  for (let i = 0; i < numOfPucks; i++) {
-    pucks[i].pos.add(pucks[i].vel.clone().multiplyScalar(dt));
-    pucks[i].collisionWall();
-    pucks[i].CollisionOfMotionWall(wall_entrys[4], 4);//todo
-    pucks[i].CollisionOfMotionWall(wall_entrys[5], 5);//todo
-    pucks[i].mesh.position.copy(pucks[i].pos);
-    pucks[i].light.position.set(pucks[i].pos.x, pucks[i].pos.y, pucks[i].pos.z);
-    for (let j = 0; j < numOfPucks; j++) {
-      if (i != j) {
-        pucks[i].CollisionOfEach(pucks[j]);
+    }
+
+    for (let i = 0; i < numOfPucks; i++) {
+      pucks[i].pos.add(pucks[i].vel.clone().multiplyScalar(dt));
+      pucks[i].collisionWall();
+      pucks[i].CollisionOfMotionWall(wall_entrys[4], 4); //todo
+      pucks[i].CollisionOfMotionWall(wall_entrys[5], 5); //todo
+      pucks[i].mesh.position.copy(pucks[i].pos);
+      pucks[i].light.position.set(pucks[i].pos.x, pucks[i].pos.y, pucks[i].pos.z);
+      for (let j = 0; j < numOfPucks; j++) {
+        if (i != j) {
+          pucks[i].CollisionOfEach(pucks[j]);
+        }
       }
     }
+    requestAnimationFrame(animate);
+    renderer.render(scene, camera);
   }
-  requestAnimationFrame(animate);
-  renderer.render(scene, camera);
-}
-// important to add this in jsfiddle!
-window.focus();
+  // important to add this in jsfiddle!
+  window.focus();
 
-    
 </script>
